@@ -43,9 +43,6 @@ export default function Home() {
           Ya tengo cuenta
         </Link>
       </div>
-      <p className="mt-3 text-xs" style={{ color: "var(--muted)" }}>
-        Plan gratis: 30 publicaciones al mes. Sin tarjeta.
-      </p>
 
       <div className="mt-16 grid gap-4 sm:grid-cols-2">
         {ventajas.map((v) => (

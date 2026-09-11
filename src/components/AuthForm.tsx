@@ -63,7 +63,7 @@ export default function AuthForm({ mode }: { mode: "login" | "registro" }) {
     <main className="mx-auto flex w-full max-w-sm flex-col justify-center px-5 py-12 sm:min-h-[calc(100dvh-4rem)] sm:py-16">
       <h1 className="text-2xl font-bold">{esRegistro ? "Crear cuenta" : "Entrar"}</h1>
       <p className="mt-1 text-sm" style={{ color: "var(--muted)" }}>
-        {esRegistro ? "Gratis, 30 publicaciones al mes." : "Bienvenido de vuelta."}
+        {esRegistro ? "Tres días de prueba. Sin tarjeta." : "Bienvenido de vuelta."}
       </p>
 
       {errorDelEnlace && !msg && (

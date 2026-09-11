@@ -249,8 +249,13 @@ export const SCOPES = [
   "pages_show_list",
   "pages_read_engagement",
   "pages_manage_posts",
+  // Publicar y comentar son permisos DISTINTOS. Con solo `manage_posts` el
+  // post sale y el primer comentario muere con un error de permiso — que el
+  // publisher atrapa para no tumbar el post, asi que nadie se entera.
+  "pages_manage_engagement",
   "instagram_basic",
   "instagram_content_publish",
+  "instagram_manage_comments",
   "business_management",
 ].join(",");
 

@@ -1,0 +1,71 @@
+# Reloj de respaldo para los posts programados.
+#
+# ── Por qué existe ──
+#
+# Cloudflare tiene registrado el cron `*/5 * * * *` en el Worker, y el Worker
+# tiene su manejador `scheduled`. Pero NO lo dispara: escuchando con
+# `wrangler tail` casi media hora, cubriendo seis marcas de los cinco minutos,
+# no apareció ni una sola corrida — mientras que una petición normal sí sale en
+# los registros. Cuatro posts se quedaron represados sin que nadie avisara.
+#
+# Esto llama al mismo endpoint desde fuera. Si Cloudflare revive, no estorba:
+# el endpoint no publica dos veces porque solo mira los que siguen en
+# `scheduled`, y al publicarlos les cambia el estado.
+#
+# ── Lo que hace falta ──
+#
+# Un secreto del repositorio llamado CRON_SECRET con el mismo valor que el
+# secreto del Worker. Si no cuadran, el endpoint responde 401 y este trabajo
+# falla a la vista, que es lo que se quiere: enterarse.
+
+name: Publicar programados
+
+on:
+  schedule:
+    # Cada 5 minutos. GitHub no promete puntualidad al segundo y en horas
+    # cargadas puede retrasarse unos minutos; para publicar un post eso da
+    # igual, y el endpoint recoge todo lo vencido, no solo lo de este minuto.
+    - cron: "*/5 * * * *"
+  # Y a mano, para poder disparar uno represado sin esperar.
+  workflow_dispatch:
+
+# Dos corridas a la vez no harían daño —la segunda no encontraría nada que
+# publicar— pero no tiene sentido pagarlas.
+concurrency:
+  group: publicar-programados
+  cancel-in-progress: false
+
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Tocar el endpoint de publicación
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          URL: https://multipost.asuarezdev.workers.dev/api/cron/publish
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "Falta el secreto CRON_SECRET del repositorio."
+            echo "Ponlo en Settings > Secrets and variables > Actions,"
+            echo "con el MISMO valor que el secreto del Worker."
+            exit 1
+          fi
+
+          # -sS calla la barra de progreso pero deja pasar los errores.
+          # El cuerpo y el código se separan para poder mirarlos por aparte.
+          respuesta=$(curl -sS -w '\n%{http_code}' --max-time 120 \
+            -H "Authorization: Bearer $CRON_SECRET" "$URL")
+
+          codigo=$(printf '%s' "$respuesta" | tail -n1)
+          cuerpo=$(printf '%s' "$respuesta" | sed '$d')
+
+          echo "HTTP $codigo"
+          echo "$cuerpo"
+
+          # Un 401 aquí significa que los dos secretos no cuadran. Es un fallo
+          # de verdad y tiene que verse en rojo, no pasar por bueno.
+          if [ "$codigo" != "200" ]; then
+            echo "::error::El endpoint respondió $codigo"
+            exit 1
+          fi

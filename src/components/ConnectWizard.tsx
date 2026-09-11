@@ -413,7 +413,7 @@ export default function ConnectWizard({
             En <b>Activos</b> marca <b>Páginas</b> y <b>Cuentas de Instagram</b>.
           </li>
           <li>
-            En <b>Permisos</b> marca estos cinco:
+            En <b>Permisos</b> marca estos siete:
             <div
               className="mt-1.5 rounded-lg px-3 py-2 font-mono text-xs"
               style={{ background: "var(--background)", border: "1px solid var(--border)" }}
@@ -424,9 +424,13 @@ export default function ConnectWizard({
               <br />
               pages_manage_posts
               <br />
+              pages_manage_engagement
+              <br />
               instagram_basic
               <br />
               instagram_content_publish
+              <br />
+              instagram_manage_comments
             </div>
           </li>
           <li>

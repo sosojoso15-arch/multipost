@@ -18,7 +18,11 @@ export default {
     env: Record<string, string | undefined>,
     ctx: ExecutionContext,
   ) {
-    const base = env.NEXT_PUBLIC_APP_URL ?? "https://multipost.workers.dev";
+    // OJO con el respaldo: `multipost.workers.dev` NO es el dominio de este
+    // Worker —el real lleva el subdominio de la cuenta—. Como la peticion no
+    // sale a internet da igual para enrutar, pero cualquier codigo que arme
+    // una URL absoluta a partir del host la armaria mal. Mejor el de verdad.
+    const base = env.NEXT_PUBLIC_APP_URL ?? "https://multipost.asuarezdev.workers.dev";
     const secret = env.CRON_SECRET;
 
     if (!secret) {

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
 import { runPost } from "@/lib/publisher";
-import { limitePosts } from "@/lib/plans";
+import { limitePosts, planVigente } from "@/lib/plans";
 
 export const maxDuration = 300;
 
@@ -67,10 +67,12 @@ export async function POST(req: Request) {
     );
   }
 
-  // Limite del plan
+  // Limite del plan.
+  // Se piden tambien las fechas: la columna `plan` por si sola no dice si
+  // sigue pagado ni si esta en la prueba.
   const { data: profile } = await sb
     .from("profiles")
-    .select("plan, posts_used, period_start")
+    .select("plan, posts_used, period_start, trial_ends_at, plan_expires_at")
     .eq("id", user.id)
     .single();
 
@@ -81,11 +83,20 @@ export async function POST(req: Request) {
 
     const nuevoPeriodo = new Date(profile.period_start) < inicioMes;
     const usados = nuevoPeriodo ? 0 : profile.posts_used;
-    const limite = limitePosts(profile.plan);
+    const vigente = planVigente(profile);
+    const limite = limitePosts(vigente);
 
     if (usados + accountIds.length > limite) {
+      // Se dice POR QUE, no solo que no. "Llegaste al limite" a quien se le
+      // acaba de vencer el plan no explica nada y parece un fallo.
+      const seVencio =
+        profile.plan !== "free" && vigente === "free" && Boolean(profile.plan_expires_at);
       return NextResponse.json(
-        { error: `Llegaste al limite de tu plan (${limite} publicaciones al mes).` },
+        {
+          error: seVencio
+            ? "Se te vencio el plan. Renuevalo para seguir publicando."
+            : `Llegaste al limite de tu plan (${limite} publicaciones al mes).`,
+        },
         { status: 402 },
       );
     }

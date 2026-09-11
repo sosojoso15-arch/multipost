@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import { secreto } from "@/lib/env";
 
 /**
  * Cifrado de tokens de pagina. AES-256-GCM.
@@ -6,7 +7,7 @@ import crypto from "node:crypto";
  */
 
 function key(): Buffer {
-  const raw = process.env.TOKEN_ENCRYPTION_KEY;
+  const raw = secreto("TOKEN_ENCRYPTION_KEY");
   if (!raw) throw new Error("Falta TOKEN_ENCRYPTION_KEY");
   const k = Buffer.from(raw, "base64");
   if (k.length !== 32) {

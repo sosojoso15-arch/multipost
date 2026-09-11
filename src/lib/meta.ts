@@ -298,3 +298,23 @@ export async function exchangeCodeForToken(opts: {
   if (!json.access_token) throw new MetaError({ message: "Meta no devolvio token" });
   return json.access_token;
 }
+
+// ------------------------------------------------------------------
+// Primer comentario: el enlace y los hashtags van aqui, no en el post,
+// para no castigar el alcance. Mismo endpoint en Facebook y en Instagram.
+//
+// Instagram exige ademas el permiso instagram_manage_comments.
+// ------------------------------------------------------------------
+export async function comentar(
+  ver: string,
+  objetoId: string,
+  token: string,
+  mensaje: string,
+): Promise<string> {
+  const r = await graph<{ id: string }>(ver, `/${objetoId}/comments`, {
+    method: "POST",
+    token,
+    params: { message: mensaje },
+  });
+  return r.id;
+}

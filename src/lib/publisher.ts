@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { decrypt } from "@/lib/crypto";
-import { publish, MetaError } from "@/lib/meta";
+import { publish, comentar, MetaError } from "@/lib/meta";
 
 type Media = {
   url: string;
@@ -18,7 +18,7 @@ type Media = {
 export async function runPost(sb: SupabaseClient, postId: string) {
   const { data: post, error } = await sb
     .from("posts")
-    .select("id, user_id, message, link, media, status")
+    .select("id, user_id, message, link, media, status, first_comment")
     .eq("id", postId)
     .single();
 
@@ -83,6 +83,24 @@ export async function runPost(sb: SupabaseClient, postId: string) {
           { message: post.message, link: post.link, imageUrl, videoUrl },
         );
 
+        // El primer comentario va aparte. Si falla, el post NO falla:
+        // ya salio publicado y eso es lo que importa.
+        let commentId: string | null = null;
+        let commentError: string | null = null;
+
+        if (post.first_comment?.trim()) {
+          try {
+            commentId = await comentar(
+              acc.meta_apps?.graph_ver ?? "v23.0",
+              remoteId,
+              decrypt(acc.token_enc),
+              post.first_comment.trim(),
+            );
+          } catch (e) {
+            commentError = e instanceof Error ? e.message : "No se pudo comentar";
+          }
+        }
+
         await sb
           .from("post_targets")
           .update({
@@ -90,12 +108,14 @@ export async function runPost(sb: SupabaseClient, postId: string) {
             remote_id: remoteId,
             error_code: null,
             error_msg: null,
+            comment_id: commentId,
+            comment_error: commentError,
             attempts: t.attempts + 1,
             completed_at: new Date().toISOString(),
           })
           .eq("id", t.id);
 
-        return { ok: true, name: acc.name, remoteId };
+        return { ok: true, name: acc.name, remoteId, commentError };
       } catch (e) {
         const msg = e instanceof Error ? e.message : "Fallo desconocido";
         const code = e instanceof MetaError ? e.code : undefined;

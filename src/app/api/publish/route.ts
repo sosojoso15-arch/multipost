@@ -9,6 +9,7 @@ type Body = {
   message?: string;
   link?: string;
   media?: { url: string; type: "image" | "video"; path?: string }[];
+  firstComment?: string;
   accountIds: string[];
   scheduledAt?: string | null;
 };
@@ -106,6 +107,7 @@ export async function POST(req: Request) {
       user_id: user.id,
       message: body.message?.trim() || null,
       link: body.link?.trim() || null,
+      first_comment: body.firstComment?.trim() || null,
       media,
       status: programado ? "scheduled" : "publishing",
       scheduled_at: body.scheduledAt ?? null,

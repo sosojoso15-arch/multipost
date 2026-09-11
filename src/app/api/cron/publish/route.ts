@@ -1,17 +1,26 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { runPost } from "@/lib/publisher";
+import { secreto } from "@/lib/env";
 
 export const maxDuration = 300;
 
 /** Vercel Cron. Publica los posts programados que ya les llego la hora. */
 export async function GET(req: Request) {
+  const esperado = secreto("CRON_SECRET");
   const auth = req.headers.get("authorization");
-  if (!process.env.CRON_SECRET || auth !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (!esperado || auth !== `Bearer ${esperado}`) {
     return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   }
 
-  const sb = supabaseAdmin();
+  let sb;
+  try {
+    sb = supabaseAdmin();
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "No se pudo crear el cliente admin";
+    console.error(`cron: ${msg}`);
+    return NextResponse.json({ error: msg }, { status: 500 });
+  }
 
   const { data: due } = await sb
     .from("posts")

@@ -11,12 +11,19 @@ export type CuentaFila = {
   last_error: string | null;
 };
 
-type Resultado = { ok: boolean; name: string; error?: string; remoteId?: string };
+type Resultado = {
+  ok: boolean;
+  name: string;
+  error?: string;
+  remoteId?: string;
+  commentError?: string | null;
+};
 
 export default function Composer({ cuentas }: { cuentas: CuentaFila[] }) {
   const [sel, setSel] = useState<Set<string>>(() => new Set(cuentas.map((c) => c.id)));
   const [message, setMessage] = useState("");
   const [link, setLink] = useState("");
+  const [comentario, setComentario] = useState("");
   const [media, setMedia] = useState<Media | null>(null);
   const [cuando, setCuando] = useState("");
   const [busy, setBusy] = useState(false);
@@ -52,6 +59,7 @@ export default function Composer({ cuentas }: { cuentas: CuentaFila[] }) {
           message,
           link,
           media: media ? [{ url: media.url, path: media.path, type: media.type }] : [],
+          firstComment: comentario,
           accountIds: [...sel],
           scheduledAt: cuando ? new Date(cuando).toISOString() : null,
         }),
@@ -73,6 +81,7 @@ export default function Composer({ cuentas }: { cuentas: CuentaFila[] }) {
         if (j.ok === j.total) {
           setMessage("");
           setLink("");
+          setComentario("");
           // El archivo ya lo borró el servidor al publicar: aquí solo soltamos
           // la referencia, sin pedir borrado otra vez.
           setMedia(null);
@@ -125,6 +134,23 @@ export default function Composer({ cuentas }: { cuentas: CuentaFila[] }) {
         </div>
 
         <div>
+          <label className="label" htmlFor="comentario">
+            Primer comentario — opcional
+          </label>
+          <textarea
+            id="comentario"
+            className="input min-h-20 resize-y"
+            placeholder="Aquí van los enlaces y los hashtags"
+            value={comentario}
+            onChange={(e) => setComentario(e.target.value)}
+          />
+          <p className="mt-1.5 text-xs" style={{ color: "var(--muted)" }}>
+            Se publica como comentario tuyo apenas sale el post. Es donde conviene meter
+            enlaces y hashtags: así el post no pierde alcance.
+          </p>
+        </div>
+
+        <div>
           <label className="label" htmlFor="cuando">
             Programar — déjalo vacío para publicar ya
           </label>
@@ -164,6 +190,11 @@ export default function Composer({ cuentas }: { cuentas: CuentaFila[] }) {
               <li key={i} className={r.ok ? "text-green-600" : "text-red-600"}>
                 {r.ok ? "✓" : "✗"} {r.name}
                 {r.error ? ` — ${r.error}` : ""}
+                {r.commentError && (
+                  <span className="block pl-4 text-xs text-amber-600">
+                    El post salió, pero no se pudo comentar: {r.commentError}
+                  </span>
+                )}
               </li>
             ))}
           </ul>

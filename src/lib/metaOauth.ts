@@ -1,10 +1,12 @@
 /** Cosas que comparten las dos rutas del flujo OAuth de Meta. */
 
+import { secreto } from "@/lib/env";
+
 export const STATE_COOKIE = "mp_oauth_state";
 
 /** La URL que el cliente tiene que autorizar en SU app. Una sola. */
 export function redirectUri(): string {
-  const base = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+  const base = secreto("NEXT_PUBLIC_APP_URL") ?? "http://localhost:3000";
   return `${base.replace(/\/$/, "")}/api/meta/callback`;
 }
 

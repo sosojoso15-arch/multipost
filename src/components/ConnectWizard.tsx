@@ -180,7 +180,7 @@ export default function ConnectWizard({
           appSecret: appSecret || undefined,
         }),
       });
-      const j = await r.json();
+      const j = (await r.json()) as { error?: string };
       if (!r.ok) throw new Error(j.error ?? "No se pudo guardar");
 
       setGuardada({ app_id: appId, graph_ver: graphVer, config_id: configId, tiene_secret: true });

@@ -1,0 +1,24 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "multipost",
+  "main": "custom-worker.ts",
+  "compatibility_date": "2026-09-01",
+
+  // nodejs_compat es obligatorio: ciframos los tokens con node:crypto.
+  "compatibility_flags": ["nodejs_compat"],
+
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+
+  // Esta es la razon de estar en Cloudflare y no en Vercel:
+  // el plan gratis SI deja correr el cron cada 5 minutos.
+  "triggers": {
+    "crons": ["*/5 * * * *"]
+  },
+
+  "observability": {
+    "enabled": true
+  }
+}

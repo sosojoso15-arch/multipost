@@ -59,13 +59,19 @@ export default function Composer({ cuentas }: { cuentas: CuentaFila[] }) {
         }),
       });
 
-      const j = await r.json();
+      const j = (await r.json()) as {
+        error?: string;
+        scheduled?: boolean;
+        results?: Resultado[];
+        ok?: number;
+        total?: number;
+      };
       if (!r.ok) throw new Error(j.error ?? "Falló la publicación");
 
       if (j.scheduled) {
         setAviso(`Programado para el ${new Date(cuando).toLocaleString("es")}.`);
       } else {
-        setResultados(j.results as Resultado[]);
+        setResultados(j.results ?? []);
         if (j.ok === j.total) {
           setMessage("");
           setLink("");

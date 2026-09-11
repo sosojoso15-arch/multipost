@@ -22,7 +22,7 @@ export default async function PanelPage() {
 
   if (!cuentas || cuentas.length === 0) {
     return (
-      <main className="mx-auto w-full max-w-2xl px-5 py-16 text-center">
+      <main className="shell-lectura py-16 text-center sm:py-24">
         <h1 className="text-2xl font-bold">Todavía no tienes cuentas conectadas</h1>
         <p className="mx-auto mt-2 max-w-md text-sm" style={{ color: "var(--muted)" }}>
           Es una configuración de una sola vez. Te llevamos paso por paso, son unos 5 minutos.
@@ -35,9 +35,9 @@ export default async function PanelPage() {
   }
 
   return (
-    <main className="mx-auto w-full max-w-4xl px-5 py-8">
-      <div className="mb-5 flex flex-wrap items-end justify-between gap-2">
-        <h1 className="text-2xl font-bold">Nueva publicación</h1>
+    <main className="shell py-6 sm:py-8">
+      <div className="mb-6 flex flex-wrap items-end justify-between gap-x-4 gap-y-1">
+        <h1 className="text-2xl font-bold tracking-tight sm:text-[28px]">Nueva publicación</h1>
         <p className="text-xs" style={{ color: "var(--muted)" }}>
           Plan {profile?.plan ?? "free"} · {profile?.posts_used ?? 0} publicaciones este mes
         </p>

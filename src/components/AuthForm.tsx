@@ -56,7 +56,11 @@ export default function AuthForm({ mode }: { mode: "login" | "registro" }) {
   }
 
   return (
-    <main className="mx-auto w-full max-w-sm px-5 py-20">
+    /* Un formulario de entrar se queda estrecho a proposito: un campo de
+       correo de mil pixeles se ve mal y no ayuda a nadie. Lo que cambia es
+       que ahora se centra en el alto de la pantalla en vez de colgar de
+       arriba con 80 px fijos, que en un movil bajito dejaba el boton fuera. */
+    <main className="mx-auto flex w-full max-w-sm flex-col justify-center px-5 py-12 sm:min-h-[calc(100dvh-4rem)] sm:py-16">
       <h1 className="text-2xl font-bold">{esRegistro ? "Crear cuenta" : "Entrar"}</h1>
       <p className="mt-1 text-sm" style={{ color: "var(--muted)" }}>
         {esRegistro ? "Gratis, 30 publicaciones al mes." : "Bienvenido de vuelta."}

@@ -35,12 +35,62 @@ body {
   color: var(--foreground);
 }
 
+/* El teléfono hace zoom solo al tocar un campo de menos de 16 px. Se ve como
+   si la página saltara, y al salir del campo NO vuelve: hay que pellizcar
+   para atrás. Por eso los campos miden 16 px en pantallas de tocar, aunque
+   en el monitor se vean a 14. */
+@media (max-width: 640px) {
+  input,
+  textarea,
+  select {
+    font-size: 16px;
+  }
+}
+
+/* Quien navega con el teclado tiene que ver dónde está parado. El `outline`
+   del navegador lo quitaba `outline-none` de los campos; esto lo devuelve
+   con el color de la marca, y solo para el teclado — con el ratón no sale. */
+:where(a, button, input, textarea, select, [tabindex]):focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+/* Quien pidió menos movimiento, menos movimiento. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
 /* atajos que se repiten en todo el panel */
 @layer components {
+  /* El ancho del panel, UNA sola vez.
+
+     Antes cada pieza ponía el suyo a mano —la barra `max-w-4xl`, el contenido
+     `max-w-4xl`, el asistente `max-w-2xl`— y bastaba tocar uno para que
+     dejaran de cuadrar. Y 896 px en un monitor de 1900 es medio monitor
+     vacío.
+
+     Crece por tramos en vez de de golpe: en un portátil de 1280 se llena sin
+     que los renglones se hagan interminables, y en un monitor grande usa el
+     sitio de verdad. */
+  .shell {
+    @apply mx-auto w-full max-w-[1240px] px-4 sm:px-6 lg:px-8;
+  }
+  /* El asistente de conectar es lectura, no panel: un renglón corto se lee
+     mejor, así que ese se queda estrecho a propósito. */
+  .shell-lectura {
+    @apply mx-auto w-full max-w-3xl px-4 sm:px-6;
+  }
+
   .card {
     background: var(--surface);
     border: 1px solid var(--border);
-    @apply rounded-xl p-5;
+    /* Menos relleno en el teléfono: 20 px a cada lado se comen la pantalla. */
+    @apply rounded-xl p-4 sm:p-5;
   }
   .input {
     background: transparent;
@@ -51,7 +101,9 @@ body {
     border-color: var(--brand);
   }
   .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed;
+    /* 40 px de alto: es lo que mide un dedo. Por debajo de eso se falla el
+       toque y la gente le da dos veces. */
+    @apply inline-flex min-h-10 items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50;
   }
   .btn-primary {
     background: var(--brand);

@@ -1,4 +1,18 @@
-// @ts-expect-error — este archivo lo genera `opennextjs-cloudflare build`
+/* `@ts-ignore` y no `@ts-expect-error`, a proposito.
+
+   Este archivo lo genera `opennextjs-cloudflare build`. En un checkout
+   limpio NO existe y TypeScript se queja; despues de compilar SI existe y
+   entonces `@ts-expect-error` se queja de lo contrario —"directiva sin
+   usar"— y tumba el build. O sea que fallaba en los dos casos, solo que en
+   uno distinto cada vez.
+
+   `@ts-ignore` calla si hay error y no protesta si no lo hay, que es justo
+   lo que hace falta para algo que a veces esta y a veces no.
+   ESLint prefiere `@ts-expect-error` por regla general, y tiene razon casi
+   siempre. Aqui no: el archivo a veces esta y a veces no, asi que la
+   directiva estricta falla la mitad de las veces. */
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment -- ver arriba
+// @ts-ignore
 import { default as handler } from "./.open-next/worker.js";
 
 /**
@@ -10,7 +24,7 @@ import { default as handler } from "./.open-next/worker.js";
  * El cron no sale a internet: le pasa la peticion directo al mismo handler,
  * sin dar la vuelta por DNS.
  */
-export default {
+const worker = {
   fetch: handler.fetch,
 
   async scheduled(
@@ -45,6 +59,10 @@ export default {
     );
   },
 };
+
+/* Con nombre y no suelto: un `export default {...}` anonimo no se puede
+   nombrar en un stack trace ni recargar en caliente. */
+export default worker;
 
 // Si algun dia usamos cache con Durable Objects, aqui hay que reexportar
 // DOQueueHandler y DOShardedTagCache desde ./.open-next/worker.js

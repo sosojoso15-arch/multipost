@@ -22,7 +22,7 @@ export default async function ConectarPage() {
     .order("name");
 
   return (
-    <main className="mx-auto w-full max-w-2xl px-5 py-10">
+    <main className="shell-lectura py-10">
       <h1 className="text-2xl font-bold">Mis cuentas</h1>
       <p className="mt-1 text-sm" style={{ color: "var(--muted)" }}>
         Cinco pasos cortos, una sola vez. Después solo publicas.

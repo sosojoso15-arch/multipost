@@ -11,18 +11,27 @@ export default async function PanelLayout({ children }: { children: React.ReactN
         className="sticky top-0 z-10 backdrop-blur"
         style={{ borderBottom: "1px solid var(--border)", background: "var(--surface)" }}
       >
-        <nav className="mx-auto flex w-full max-w-4xl flex-wrap items-center gap-4 px-5 py-3">
-          <Link href="/panel" className="font-bold">
+        <nav className="shell flex items-center gap-5 py-3 sm:py-3.5">
+          <Link href="/panel" className="shrink-0 text-base font-bold tracking-tight">
             Multi-Post
           </Link>
-          <Link href="/panel" className="text-sm hover:underline">
-            Publicar
-          </Link>
-          <Link href="/panel/conectar" className="text-sm hover:underline">
-            Mis cuentas
-          </Link>
-          <div className="ml-auto flex items-center gap-3">
-            <span className="hidden text-xs sm:inline" style={{ color: "var(--muted)" }}>
+          {/* Los dos enlaces se agrupan para que no se separen al encoger. */}
+          <div className="flex items-center gap-4">
+            <Link href="/panel" className="text-sm hover:underline">
+              Publicar
+            </Link>
+            <Link href="/panel/conectar" className="whitespace-nowrap text-sm hover:underline">
+              Mis cuentas
+            </Link>
+          </div>
+          <div className="ml-auto flex min-w-0 items-center gap-3">
+            {/* El correo se recorta en vez de empujar al botón de salir fuera
+                de la pantalla. Debajo de `sm` no sale: no cabe y no hace falta. */}
+            <span
+              className="hidden max-w-[28ch] truncate text-xs sm:inline"
+              style={{ color: "var(--muted)" }}
+              title={user?.email ?? undefined}
+            >
               {user?.email}
             </span>
             <LogoutButton />

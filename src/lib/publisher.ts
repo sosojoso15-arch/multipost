@@ -2,7 +2,12 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { decrypt } from "@/lib/crypto";
 import { publish, MetaError } from "@/lib/meta";
 
-type Media = { url: string; type: "image" | "video" };
+type Media = {
+  url: string;
+  type: "image" | "video";
+  /** Ruta en el bucket. Solo la traen los archivos que subio el cliente. */
+  path?: string;
+};
 
 /**
  * Publica un post en todos sus destinos.
@@ -127,5 +132,35 @@ export async function runPost(sb: SupabaseClient, postId: string) {
     })
     .eq("id", postId);
 
+  // Meta ya se bajo la imagen y la guarda en SUS servidores, asi que el
+  // archivo nuestro ya no hace falta. Lo borramos para no acumular espacio.
+  //
+  // Si algun destino fallo NO borramos: el cliente puede querer reintentar,
+  // y sin el archivo no habria con que.
+  if (okCount === results.length) {
+    await borrarMedia(sb, media, postId);
+  }
+
   return { total: results.length, ok: okCount, results };
+}
+
+/** Saca del bucket los archivos que subio el cliente para este post. */
+async function borrarMedia(sb: SupabaseClient, media: Media[], postId: string) {
+  const rutas = media.map((m) => m.path).filter((p): p is string => Boolean(p));
+  if (rutas.length === 0) return;
+
+  const { error } = await sb.storage.from("media").remove(rutas);
+
+  if (error) {
+    // Que falle el borrado no daña la publicacion, que ya salio bien.
+    console.error(`No se pudo borrar la media del post ${postId}: ${error.message}`);
+    return;
+  }
+
+  // Dejamos la URL en el historial por referencia, pero marcamos que el
+  // archivo ya no existe, para que nadie intente reusarlo.
+  await sb
+    .from("posts")
+    .update({ media: media.map((m) => ({ ...m, path: null, borrado: true })) })
+    .eq("id", postId);
 }

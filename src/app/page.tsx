@@ -58,7 +58,7 @@ export default function Home() {
         ))}
       </div>
 
-      <div className="card mt-6">
+      <div className="card mt-6" id="por-que">
         <h2 className="font-semibold">¿Y por qué tengo que crear mi propia app de Meta?</h2>
         <p className="mt-1.5 text-sm" style={{ color: "var(--muted)" }}>
           Porque así tú eres el dueño del permiso. Es una configuración de una sola vez, te llevamos
@@ -66,6 +66,19 @@ export default function Home() {
           apruebe a un tercero, y tus accesos nunca salen de tu control.
         </p>
       </div>
+
+      <footer
+        className="mt-14 flex flex-wrap gap-x-5 gap-y-2 pt-6 text-sm"
+        style={{ borderTop: "1px solid var(--border)", color: "var(--muted)" }}
+      >
+        <span>Multi-Post</span>
+        <Link href="/privacidad" className="hover:underline">
+          Política de privacidad
+        </Link>
+        <Link href="/eliminar-datos" className="hover:underline">
+          Eliminar mis datos
+        </Link>
+      </footer>
     </main>
   );
 }

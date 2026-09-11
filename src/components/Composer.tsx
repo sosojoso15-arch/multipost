@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import MediaPicker, { type Media } from "@/components/MediaPicker";
 
 export type CuentaFila = {
   id: string;
@@ -16,8 +17,7 @@ export default function Composer({ cuentas }: { cuentas: CuentaFila[] }) {
   const [sel, setSel] = useState<Set<string>>(() => new Set(cuentas.map((c) => c.id)));
   const [message, setMessage] = useState("");
   const [link, setLink] = useState("");
-  const [mediaUrl, setMediaUrl] = useState("");
-  const [mediaType, setMediaType] = useState<"image" | "video">("image");
+  const [media, setMedia] = useState<Media | null>(null);
   const [cuando, setCuando] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -25,10 +25,8 @@ export default function Composer({ cuentas }: { cuentas: CuentaFila[] }) {
   const [aviso, setAviso] = useState<string | null>(null);
 
   const igSinMedia = useMemo(
-    () =>
-      cuentas.filter((c) => sel.has(c.id) && c.platform === "instagram").length > 0 &&
-      mediaUrl.trim() === "",
-    [cuentas, sel, mediaUrl],
+    () => cuentas.some((c) => sel.has(c.id) && c.platform === "instagram") && media === null,
+    [cuentas, sel, media],
   );
 
   function toggle(id: string) {
@@ -53,7 +51,7 @@ export default function Composer({ cuentas }: { cuentas: CuentaFila[] }) {
         body: JSON.stringify({
           message,
           link,
-          media: mediaUrl.trim() ? [{ url: mediaUrl.trim(), type: mediaType }] : [],
+          media: media ? [{ url: media.url, path: media.path, type: media.type }] : [],
           accountIds: [...sel],
           scheduledAt: cuando ? new Date(cuando).toISOString() : null,
         }),
@@ -75,7 +73,9 @@ export default function Composer({ cuentas }: { cuentas: CuentaFila[] }) {
         if (j.ok === j.total) {
           setMessage("");
           setLink("");
-          setMediaUrl("");
+          // El archivo ya lo borró el servidor al publicar: aquí solo soltamos
+          // la referencia, sin pedir borrado otra vez.
+          setMedia(null);
         }
       }
     } catch (e) {
@@ -85,7 +85,7 @@ export default function Composer({ cuentas }: { cuentas: CuentaFila[] }) {
     }
   }
 
-  const vacio = !message.trim() && !mediaUrl.trim() && !link.trim();
+  const vacio = !message.trim() && media === null && !link.trim();
 
   return (
     <div className="grid gap-4 md:grid-cols-[1fr_280px]">
@@ -104,33 +104,11 @@ export default function Composer({ cuentas }: { cuentas: CuentaFila[] }) {
           />
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-[110px_1fr]">
-          <div>
-            <label className="label" htmlFor="mtype">
-              Tipo
-            </label>
-            <select
-              id="mtype"
-              className="input"
-              value={mediaType}
-              onChange={(e) => setMediaType(e.target.value as "image" | "video")}
-            >
-              <option value="image">Imagen</option>
-              <option value="video">Video</option>
-            </select>
-          </div>
-          <div>
-            <label className="label" htmlFor="media">
-              URL del archivo
-            </label>
-            <input
-              id="media"
-              className="input"
-              placeholder="https://... (debe ser público en internet)"
-              value={mediaUrl}
-              onChange={(e) => setMediaUrl(e.target.value)}
-            />
-          </div>
+        <div>
+          <label className="label" htmlFor="archivo">
+            Imagen o video
+          </label>
+          <MediaPicker media={media} onChange={setMedia} onError={setError} />
         </div>
 
         <div>

@@ -8,7 +8,7 @@ export const maxDuration = 300;
 type Body = {
   message?: string;
   link?: string;
-  media?: { url: string; type: "image" | "video" }[];
+  media?: { url: string; type: "image" | "video"; path?: string }[];
   accountIds: string[];
   scheduledAt?: string | null;
 };
@@ -29,6 +29,13 @@ export async function POST(req: Request) {
   }
   if (!body.message?.trim() && media.length === 0 && !body.link?.trim()) {
     return NextResponse.json({ error: "El post esta vacio" }, { status: 400 });
+  }
+
+  // El `path` termina en un borrado cuando la publicacion sale bien. Si alguien
+  // mandara la ruta de otro cliente, le borrariamos el archivo. Cortamos aqui.
+  const ajeno = media.find((m) => m.path && !m.path.startsWith(`${user.id}/`));
+  if (ajeno) {
+    return NextResponse.json({ error: "Ese archivo no es tuyo." }, { status: 403 });
   }
 
   // Esta consulta va bajo RLS: solo devuelve las cuentas de ESTE usuario.

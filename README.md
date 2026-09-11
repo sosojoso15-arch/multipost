@@ -105,7 +105,8 @@ El secreto se guarda cifrado y nunca se vuelve a mostrar.
 - La cuenta debe ser **Business o Creator** y estar ligada a una página de Facebook.
 - Publica en dos pasos (crear contenedor → publicar). Los videos se esperan hasta 2 min
   mientras Meta los procesa.
-- Los archivos van por **URL pública**, no por archivo local.
+- Meta descarga el archivo desde una URL pública. Por eso el bucket `media` de Supabase
+  es público: las rutas llevan un uuid al azar y el archivo se borra apenas se publica.
 
 ## Desplegar
 
@@ -136,7 +137,6 @@ Después, en el panel de Vercel:
 ## Pendiente
 
 - [ ] Cobros con Stripe (los planes y límites ya están en la base)
-- [ ] Subir imágenes desde el PC (hoy solo URL) — con Vercel Blob o Supabase Storage
 - [ ] Historial de publicaciones y reintentar las fallidas
 - [ ] Carrusel de varias imágenes
 - [ ] Página de política de privacidad y borrado de datos

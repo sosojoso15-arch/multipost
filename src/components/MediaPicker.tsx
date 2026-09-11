@@ -30,6 +30,24 @@ export default function MediaPicker({
   const [progreso, setProgreso] = useState(0);
   const [encima, setEncima] = useState(false);
 
+  // Salida para videos de mas de 50 MB, que es el tope del plan gratis
+  // de Supabase. Si el archivo ya vive en internet, no hay que subirlo.
+  const [modoUrl, setModoUrl] = useState(false);
+  const [urlPegada, setUrlPegada] = useState("");
+  const [tipoPegado, setTipoPegado] = useState<"image" | "video">("video");
+
+  function usarUrl() {
+    const u = urlPegada.trim();
+    if (!/^https:\/\/\S+$/i.test(u)) {
+      onError("Tiene que ser una URL que empiece por https:// y sea pública.");
+      return;
+    }
+    onError(null);
+    onChange({ url: u, type: tipoPegado, name: u.split("/").pop() || "archivo" });
+    setUrlPegada("");
+    setModoUrl(false);
+  }
+
   async function subir(file: File) {
     onError(null);
     setSubiendo(true);
@@ -155,6 +173,61 @@ export default function MediaPicker({
     );
   }
 
+  // ---------- pegar URL ----------
+  if (modoUrl) {
+    return (
+      <div
+        className="space-y-3 rounded-lg p-4"
+        style={{ background: "var(--background)", border: "1px solid var(--border)" }}
+      >
+        <p className="text-sm font-semibold">Pega la dirección del archivo</p>
+        <p className="text-xs" style={{ color: "var(--muted)" }}>
+          Sirve para videos de más de 50 MB. Tiene que ser un enlace público y directo al
+          archivo — Meta lo descarga desde ahí.
+        </p>
+
+        <input
+          className="input"
+          placeholder="https://.../video.mp4"
+          value={urlPegada}
+          onChange={(e) => setUrlPegada(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              usarUrl();
+            }
+          }}
+        />
+
+        <select
+          className="input"
+          value={tipoPegado}
+          onChange={(e) => setTipoPegado(e.target.value as "image" | "video")}
+          aria-label="Tipo de archivo"
+        >
+          <option value="video">Video</option>
+          <option value="image">Imagen</option>
+        </select>
+
+        <div className="flex gap-2">
+          <button type="button" className="btn btn-primary !py-1.5 text-xs" onClick={usarUrl}>
+            Usar esta URL
+          </button>
+          <button
+            type="button"
+            className="btn btn-ghost !py-1.5 text-xs"
+            onClick={() => {
+              setModoUrl(false);
+              onError(null);
+            }}
+          >
+            Volver
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   // ---------- vacio ----------
   return (
     <>
@@ -185,6 +258,15 @@ export default function MediaPicker({
         <p className="mt-2 text-[11px]" style={{ color: "var(--muted)" }}>
           JPG, PNG, WEBP, GIF, MP4 o MOV · hasta 50 MB
         </p>
+      </button>
+
+      <button
+        type="button"
+        className="mt-2 text-xs underline"
+        style={{ color: "var(--muted)" }}
+        onClick={() => setModoUrl(true)}
+      >
+        ¿Video de más de 50 MB? Pega una URL
       </button>
 
       <input

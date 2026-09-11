@@ -1,0 +1,131 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { decrypt } from "@/lib/crypto";
+import { publish, MetaError } from "@/lib/meta";
+
+type Media = { url: string; type: "image" | "video" };
+
+/**
+ * Publica un post en todos sus destinos.
+ * Cada destino es independiente: si una pagina falla, las demas siguen.
+ * Sirve igual para "publicar ya" (con la sesion del usuario) y para el
+ * cron de programados (con service role).
+ */
+export async function runPost(sb: SupabaseClient, postId: string) {
+  const { data: post, error } = await sb
+    .from("posts")
+    .select("id, user_id, message, link, media, status")
+    .eq("id", postId)
+    .single();
+
+  if (error || !post) throw new Error("Post no encontrado");
+
+  await sb.from("posts").update({ status: "publishing" }).eq("id", postId);
+
+  const media = (post.media ?? []) as Media[];
+  const imageUrl = media.find((m) => m.type === "image")?.url ?? null;
+  const videoUrl = media.find((m) => m.type === "video")?.url ?? null;
+
+  const { data: targets } = await sb
+    .from("post_targets")
+    .select(
+      "id, attempts, accounts(id, user_id, platform, external_id, name, token_enc, meta_apps(graph_ver))",
+    )
+    .eq("post_id", postId)
+    .in("status", ["pending", "error"]);
+
+  type Row = {
+    id: string;
+    attempts: number;
+    accounts: {
+      id: string;
+      user_id: string;
+      platform: "facebook" | "instagram";
+      external_id: string;
+      name: string;
+      token_enc: string;
+      meta_apps: { graph_ver: string } | null;
+    } | null;
+  };
+
+  const rows = (targets ?? []) as unknown as Row[];
+
+  const results = await Promise.all(
+    rows.map(async (t) => {
+      const acc = t.accounts;
+      if (!acc) return { ok: false, name: "?" };
+
+      // Segunda reja. El cron corre con service role y se salta el RLS,
+      // asi que aqui comprobamos a mano que la cuenta sea del dueno del post.
+      if (acc.user_id !== post.user_id) {
+        await sb
+          .from("post_targets")
+          .update({
+            status: "error",
+            error_msg: "Esa cuenta no pertenece al dueño del post",
+            attempts: t.attempts + 1,
+            completed_at: new Date().toISOString(),
+          })
+          .eq("id", t.id);
+        return { ok: false, name: acc.name, error: "cuenta ajena" };
+      }
+
+      try {
+        const remoteId = await publish(
+          acc.platform,
+          acc.meta_apps?.graph_ver ?? "v23.0",
+          acc.external_id,
+          decrypt(acc.token_enc),
+          { message: post.message, link: post.link, imageUrl, videoUrl },
+        );
+
+        await sb
+          .from("post_targets")
+          .update({
+            status: "ok",
+            remote_id: remoteId,
+            error_code: null,
+            error_msg: null,
+            attempts: t.attempts + 1,
+            completed_at: new Date().toISOString(),
+          })
+          .eq("id", t.id);
+
+        return { ok: true, name: acc.name, remoteId };
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : "Fallo desconocido";
+        const code = e instanceof MetaError ? e.code : undefined;
+
+        await sb
+          .from("post_targets")
+          .update({
+            status: "error",
+            error_code: code ?? null,
+            error_msg: msg,
+            attempts: t.attempts + 1,
+            completed_at: new Date().toISOString(),
+          })
+          .eq("id", t.id);
+
+        // Token muerto o permiso revocado: marcamos la cuenta para que el
+        // usuario sepa que tiene que volver a conectar.
+        if (code === 190 || code === 200 || code === 10) {
+          await sb.from("accounts").update({ last_error: msg }).eq("id", acc.id);
+        }
+
+        return { ok: false, name: acc.name, error: msg };
+      }
+    }),
+  );
+
+  const okCount = results.filter((r) => r.ok).length;
+
+  await sb
+    .from("posts")
+    .update({
+      status: okCount === results.length ? "done" : okCount > 0 ? "done" : "failed",
+      published_at: new Date().toISOString(),
+    })
+    .eq("id", postId);
+
+  return { total: results.length, ok: okCount, results };
+}

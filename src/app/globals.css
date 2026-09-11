@@ -1,0 +1,68 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f6f7f9;
+  --surface: #ffffff;
+  --foreground: #14161a;
+  --muted: #5c6470;
+  --border: #e3e6ea;
+  --brand: #1877f2;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0d0f12;
+    --surface: #16191d;
+    --foreground: #e9ebee;
+    --muted: #99a1ac;
+    --border: #262b31;
+  }
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-line: var(--border);
+  --color-brand: var(--brand);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+/* atajos que se repiten en todo el panel */
+@layer components {
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    @apply rounded-xl p-5;
+  }
+  .input {
+    background: transparent;
+    border: 1px solid var(--border);
+    @apply w-full rounded-lg px-3 py-2 text-sm outline-none;
+  }
+  .input:focus {
+    border-color: var(--brand);
+  }
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-primary {
+    background: var(--brand);
+    @apply text-white hover:brightness-110;
+  }
+  .btn-ghost {
+    border: 1px solid var(--border);
+    @apply hover:brightness-95;
+  }
+  .label {
+    color: var(--muted);
+    @apply mb-1.5 block text-xs font-semibold uppercase tracking-wide;
+  }
+}

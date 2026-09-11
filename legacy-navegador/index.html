@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Multi-Post FB</title>
+<style>
+  :root{
+    --bg:#f4f5f7; --card:#fff; --tx:#14161a; --mut:#606770;
+    --bd:#dfe1e6; --fb:#1877f2; --ok:#128a2b; --err:#c0392b;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{--bg:#101214;--card:#1b1e22;--tx:#e8eaed;--mut:#9aa0a6;--bd:#2c3136;}
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--tx);
+    font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:24px 16px}
+  .wrap{max-width:860px;margin:0 auto}
+  h1{font-size:22px;margin:0 0 4px}
+  .sub{color:var(--mut);margin:0 0 20px;font-size:13px}
+  .card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:18px;margin-bottom:16px}
+  label{display:block;font-weight:600;font-size:13px;margin:12px 0 6px}
+  input,textarea,select{width:100%;padding:10px 12px;border:1px solid var(--bd);border-radius:8px;
+    background:transparent;color:var(--tx);font:inherit}
+  textarea{min-height:120px;resize:vertical}
+  button{cursor:pointer;border:0;border-radius:8px;padding:11px 18px;font:600 15px/1 inherit;color:#fff;background:var(--fb)}
+  button.ghost{background:transparent;color:var(--fb);border:1px solid var(--fb)}
+  button.sm{padding:6px 12px;font-size:13px}
+  button:disabled{opacity:.5;cursor:not-allowed}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  .pg{display:flex;gap:10px;align-items:center;padding:9px;border:1px solid var(--bd);border-radius:8px;margin-bottom:8px}
+  .pg img{width:36px;height:36px;border-radius:50%;flex:0 0 auto;background:var(--bg)}
+  .pg .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .pg input{width:auto;flex:0 0 auto}
+  .log{font-family:ui-monospace,Consolas,monospace;font-size:13px;white-space:pre-wrap;
+    background:var(--bg);border:1px solid var(--bd);border-radius:8px;padding:12px;max-height:300px;overflow:auto}
+  .ok{color:var(--ok)} .err{color:var(--err)} .mut{color:var(--mut)}
+  .hide{display:none}
+  .me{display:flex;gap:10px;align-items:center}
+  .me img{width:40px;height:40px;border-radius:50%;background:var(--bg)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Publicar en todas mis paginas</h1>
+  <p class="sub">Inicia sesion con Facebook, elige tus paginas y publica el mismo post en todas a la vez.</p>
+
+  <div class="card" id="cfgCard">
+    <label for="appId">Facebook App ID</label>
+    <input id="appId" placeholder="123456789012345" autocomplete="off">
+    <label for="ver">Version Graph API</label>
+    <select id="ver">
+      <option>v23.0</option><option>v22.0</option><option>v21.0</option><option>v20.0</option>
+    </select>
+    <div class="row" style="margin-top:14px">
+      <button id="btnInit">Guardar y conectar SDK</button>
+      <span class="mut" id="cfgMsg"></span>
+    </div>
+  </div>
+
+  <div class="card hide" id="loginCard">
+    <div id="loggedOut">
+      <button id="btnLogin">Entrar con Facebook</button>
+      <p class="sub" style="margin:10px 0 0">Permisos: pages_show_list, pages_manage_posts, pages_read_engagement, business_management.</p>
+    </div>
+    <div id="loggedIn" class="hide">
+      <div class="row" style="justify-content:space-between">
+        <div class="me"><img id="mePic" alt=""><div><b id="meName"></b><br><span class="mut">Conectado</span></div></div>
+        <button class="ghost sm" id="btnLogout">Salir</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card hide" id="pagesCard">
+    <div class="row" style="justify-content:space-between">
+      <b>Mis paginas (<span id="pgCount">0</span>)</b>
+      <div class="row">
+        <button class="ghost sm" id="btnAll">Todas</button>
+        <button class="ghost sm" id="btnNone">Ninguna</button>
+        <button class="ghost sm" id="btnReload">Recargar</button>
+      </div>
+    </div>
+    <div id="pgList" style="margin-top:12px"></div>
+  </div>
+
+  <div class="card hide" id="postCard">
+    <label for="msg">Mensaje</label>
+    <textarea id="msg" placeholder="Escribe aqui la publicacion..."></textarea>
+    <label for="img">URL de imagen (opcional)</label>
+    <input id="img" placeholder="https://ejemplo.com/foto.jpg">
+    <label for="link">Enlace (opcional, se ignora si hay imagen)</label>
+    <input id="link" placeholder="https://ejemplo.com">
+    <div class="row" style="margin-top:16px">
+      <button id="btnPost">Publicar en las seleccionadas</button>
+      <span class="mut" id="postMsg"></span>
+    </div>
+  </div>
+
+  <div class="card hide" id="logCard">
+    <b>Resultados</b>
+    <div class="log" id="log" style="margin-top:10px"></div>
+  </div>
+</div>
+
+<script>
+var $ = function(id){ return document.getElementById(id); };
+var PAGES = [];
+var VER = 'v23.0';
+
+function log(txt, cls){
+  $('logCard').classList.remove('hide');
+  var s = document.createElement('div');
+  if (cls) s.className = cls;
+  s.textContent = txt;
+  $('log').appendChild(s);
+  $('log').scrollTop = $('log').scrollHeight;
+}
+
+/* ---- config ---- */
+$('appId').value = localStorage.getItem('fb_app_id') || '';
+$('ver').value   = localStorage.getItem('fb_ver') || 'v23.0';
+
+$('btnInit').onclick = initSdk;
+
+function initSdk(){
+  var id = $('appId').value.trim();
+  if (!id) { $('cfgMsg').textContent = 'Falta el App ID'; return; }
+  VER = $('ver').value;
+  localStorage.setItem('fb_app_id', id);
+  localStorage.setItem('fb_ver', VER);
+  if (window.FB) { location.reload(); return; }
+  $('cfgMsg').textContent = 'Cargando SDK...';
+  window.fbAsyncInit = function(){
+    FB.init({ appId: id, cookie: true, xfbml: false, version: VER });
+    $('cfgMsg').textContent = 'SDK listo';
+    $('loginCard').classList.remove('hide');
+    FB.getLoginStatus(function(r){ if (r.status === 'connected') onLogin(); });
+  };
+  var s = document.createElement('script');
+  s.src = 'https://connect.facebook.net/es_LA/sdk.js';
+  s.async = true; s.defer = true; s.crossOrigin = 'anonymous';
+  s.onerror = function(){ $('cfgMsg').textContent = 'No se pudo cargar el SDK'; };
+  document.head.appendChild(s);
+}
+
+if ($('appId').value) initSdk();
+
+/* ---- login ---- */
+var SCOPES = 'public_profile,pages_show_list,pages_manage_posts,pages_read_engagement,business_management';
+
+$('btnLogin').onclick = function(){
+  FB.login(function(r){
+    if (r.authResponse) onLogin();
+    else log('Login cancelado o sin permisos', 'err');
+  }, { scope: SCOPES, return_scopes: true });
+};
+
+$('btnLogout').onclick = function(){
+  FB.logout(function(){
+    $('loggedIn').classList.add('hide');
+    $('loggedOut').classList.remove('hide');
+    $('pagesCard').classList.add('hide');
+    $('postCard').classList.add('hide');
+    PAGES = [];
+  });
+};
+
+function onLogin(){
+  $('loggedOut').classList.add('hide');
+  $('loggedIn').classList.remove('hide');
+  FB.api('/me', { fields: 'name,picture' }, function(r){
+    $('meName').textContent = (r && r.name) || 'Usuario';
+    if (r && r.picture) $('mePic').src = r.picture.data.url;
+  });
+  loadPages();
+}
+
+/* ---- paginas ---- */
+$('btnReload').onclick = loadPages;
+
+function loadPages(){
+  PAGES = [];
+  $('pgList').innerHTML = '<span class="mut">Cargando paginas...</span>';
+  $('pagesCard').classList.remove('hide');
+  fetchPages('/me/accounts?limit=100&fields=id,name,access_token,picture{url}');
+}
+
+function fetchPages(path){
+  FB.api(path, function(r){
+    if (!r || r.error) {
+      $('pgList').innerHTML = '<span class="err">Error: ' + (r && r.error ? r.error.message : 'desconocido') + '</span>';
+      return;
+    }
+    PAGES = PAGES.concat(r.data || []);
+    if (r.paging && r.paging.next) {
+      fetchPages(r.paging.next.replace(/^https:\/\/graph\.facebook\.com/, ''));
+    } else {
+      renderPages();
+    }
+  });
+}
+
+function renderPages(){
+  $('pgCount').textContent = PAGES.length;
+  if (!PAGES.length){
+    $('pgList').innerHTML = '<span class="mut">No se encontraron paginas. Revisa que la app tenga permiso sobre ellas.</span>';
+    return;
+  }
+  $('pgList').innerHTML = '';
+  PAGES.forEach(function(p, i){
+    var d = document.createElement('div');
+    d.className = 'pg';
+
+    var cb = document.createElement('input');
+    cb.type = 'checkbox'; cb.checked = true; cb.setAttribute('data-i', i);
+
+    var im = document.createElement('img');
+    im.src = (p.picture && p.picture.data) ? p.picture.data.url : '';
+    im.alt = '';
+
+    var nm = document.createElement('span');
+    nm.className = 'nm'; nm.textContent = p.name;
+
+    var id = document.createElement('span');
+    id.className = 'mut'; id.textContent = p.id;
+
+    d.appendChild(cb); d.appendChild(im); d.appendChild(nm); d.appendChild(id);
+    $('pgList').appendChild(d);
+  });
+  $('postCard').classList.remove('hide');
+}
+
+$('btnAll').onclick = function(){
+  Array.prototype.forEach.call(document.querySelectorAll('#pgList input'), function(c){ c.checked = true; });
+};
+$('btnNone').onclick = function(){
+  Array.prototype.forEach.call(document.querySelectorAll('#pgList input'), function(c){ c.checked = false; });
+};
+
+/* ---- publicar ---- */
+$('btnPost').onclick = function(){
+  var msg  = $('msg').value.trim();
+  var img  = $('img').value.trim();
+  var link = $('link').value.trim();
+  var sel  = Array.prototype.map.call(
+    document.querySelectorAll('#pgList input:checked'),
+    function(c){ return PAGES[+c.getAttribute('data-i')]; }
+  );
+
+  if (!sel.length) { $('postMsg').textContent = 'Elige al menos una pagina'; return; }
+  if (!msg && !img && !link) { $('postMsg').textContent = 'Escribe algo o pon una imagen'; return; }
+
+  $('btnPost').disabled = true;
+  $('postMsg').textContent = 'Publicando en ' + sel.length + '...';
+  $('log').innerHTML = '';
+  log('--- ' + new Date().toLocaleString() + ' ---', 'mut');
+
+  var done = 0, ok = 0;
+  sel.forEach(function(p){
+    var isPhoto = !!img;
+    var path = '/' + p.id + (isPhoto ? '/photos' : '/feed');
+    var body = { access_token: p.access_token };
+    if (isPhoto) { body.url = img; if (msg) body.caption = msg; }
+    else { if (msg) body.message = msg; if (link) body.link = link; }
+
+    FB.api(path, 'POST', body, function(r){
+      done++;
+      if (r && !r.error) {
+        ok++;
+        log('OK  ' + p.name + '  ->  ' + (r.post_id || r.id), 'ok');
+      } else {
+        log('ERR ' + p.name + '  ->  ' + (r && r.error ? r.error.message : 'fallo'), 'err');
+      }
+      if (done === sel.length) {
+        $('btnPost').disabled = false;
+        $('postMsg').textContent = ok + ' de ' + sel.length + ' publicadas';
+        log('Terminado: ' + ok + '/' + sel.length, 'mut');
+      }
+    });
+  });
+};
+</script>
+</body>
+</html>

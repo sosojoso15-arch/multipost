@@ -118,7 +118,18 @@ Después, en el panel de Vercel:
 
 1. Carga todas las variables de `.env.local`, con `NEXT_PUBLIC_APP_URL` apuntando a tu
    dominio real (`https://...`).
-2. El cron de [vercel.json](vercel.json) se activa solo en producción.
+2. **Cron.** El plan gratis de Vercel solo admite **un cron al día**, así que
+   [vercel.json](vercel.json) quedó en `0 6 * * *` como red de seguridad.
+   Para que las publicaciones programadas salgan a la hora, hace falta algo que
+   llame a `/api/cron/publish` cada 5 minutos:
+
+   | Opción | Costo | Puntualidad |
+   |---|---|---|
+   | cron-job.org u otro cron externo | gratis | buena |
+   | GitHub Actions (`schedule`) | gratis solo si el repo es público | se retrasa a veces |
+   | Vercel Pro | 20 USD/mes | exacta |
+
+   La llamada lleva la cabecera `Authorization: Bearer <CRON_SECRET>`.
 3. En Supabase → Authentication → URL Configuration, agrega tu dominio en
    *Site URL* y en *Redirect URLs*.
 

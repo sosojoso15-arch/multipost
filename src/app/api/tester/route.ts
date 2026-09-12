@@ -15,8 +15,9 @@ export async function POST(req: Request) {
   } = await sb.auth.getUser();
   if (!user) return NextResponse.json({ error: "No autenticado" }, { status: 401 });
 
-  const { facebookRef, pista, correoAviso } = (await req.json()) as {
+  const { facebookRef, nombreFb, pista, correoAviso } = (await req.json()) as {
     facebookRef?: string;
+    nombreFb?: string;
     pista?: string;
     correoAviso?: string;
   };
@@ -32,8 +33,28 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Eso es demasiado largo." }, { status: 400 });
   }
 
-  const aviso = correoAviso?.trim() || null;
-  if (aviso && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(aviso)) {
+  // Obligatorio: sin el nombre, el buscador de Meta devuelve varias cuentas
+  // parecidas y se puede invitar a la equivocada.
+  const nombre = nombreFb?.trim();
+  if (!nombre || nombre.length < 2) {
+    return NextResponse.json(
+      { error: "Escribe tu nombre tal como aparece en Facebook." },
+      { status: 400 },
+    );
+  }
+  if (nombre.length > 120) {
+    return NextResponse.json({ error: "Ese nombre es demasiado largo." }, { status: 400 });
+  }
+
+  // Obligatorio: es por donde le avisamos cuando el acceso este listo.
+  const aviso = correoAviso?.trim();
+  if (!aviso) {
+    return NextResponse.json(
+      { error: "Escribe el correo donde quieres que te avisemos." },
+      { status: 400 },
+    );
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(aviso)) {
     return NextResponse.json({ error: "Ese correo no se ve bien escrito." }, { status: 400 });
   }
 
@@ -48,6 +69,7 @@ export async function POST(req: Request) {
       {
         user_id: user.id,
         facebook_ref: ref,
+        nombre_fb: nombre,
         pista: laPista,
         correo_aviso: aviso,
         updated_at: new Date().toISOString(),

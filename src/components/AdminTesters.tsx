@@ -141,7 +141,10 @@ export default function AdminTesters({ inicial }: { inicial: Solicitud[] }) {
               <li key={s.id} className="card">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="font-mono text-sm font-semibold">{s.facebook_ref}</p>
+                    <p className="text-sm font-semibold">{s.nombre_fb ?? "(sin nombre)"}</p>
+                    <p className="font-mono text-xs" style={{ color: "var(--muted)" }}>
+                      {s.facebook_ref}
+                    </p>
                     <p className="mt-0.5 text-xs" style={{ color: "var(--muted)" }}>
                       {new Date(s.created_at).toLocaleDateString("es-CO")} · avisar a{" "}
                       <b style={{ color: "var(--foreground)" }}>
@@ -152,7 +155,10 @@ export default function AdminTesters({ inicial }: { inicial: Solicitud[] }) {
                       )}
                     </p>
                   </div>
-                  <Copiar texto={s.facebook_ref}>Copiar usuario</Copiar>
+                  <div className="flex shrink-0 flex-col gap-1.5">
+                    {s.nombre_fb && <Copiar texto={s.nombre_fb}>Copiar nombre</Copiar>}
+                    <Copiar texto={s.facebook_ref}>Copiar correo</Copiar>
+                  </div>
                 </div>
 
                 {s.pista && (
@@ -207,7 +213,7 @@ export default function AdminTesters({ inicial }: { inicial: Solicitud[] }) {
                 className="flex flex-wrap items-center gap-2 rounded-lg px-3 py-2 text-sm"
                 style={{ border: "1px solid var(--border)" }}
               >
-                <span className="font-mono text-xs">{s.facebook_ref}</span>
+                <span className="text-xs font-semibold">{s.nombre_fb ?? s.facebook_ref}</span>
                 <Etiqueta estado={s.estado} />
                 {s.estado === "listo" && !s.avisado_at && (
                   <span className="text-[11px]" style={{ color: "#9a6407" }}>

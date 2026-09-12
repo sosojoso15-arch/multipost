@@ -17,22 +17,29 @@ const ENLACE = "https://www.facebook.com/settings?tab=developer";
 export default function PedirAcceso({
   estado,
   refGuardada,
+  nombreGuardado,
   pistaGuardada,
   correoGuardado,
   nota,
 }: {
   estado: Estado;
   refGuardada: string | null;
+  nombreGuardado: string | null;
   pistaGuardada: string | null;
   correoGuardado: string | null;
   nota: string | null;
 }) {
   const router = useRouter();
   const [valor, setValor] = useState(refGuardada ?? "");
+  const [nombre, setNombre] = useState(nombreGuardado ?? "");
   const [pista, setPista] = useState(pistaGuardada ?? "");
   const [correo, setCorreo] = useState(correoGuardado ?? "");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  /* Los tres primeros son obligatorios: sin nombre se puede invitar a la
+     cuenta equivocada, y sin correo el aviso no llega a ninguna parte. */
+  const completo = valor.trim() !== "" && nombre.trim() !== "" && correo.trim() !== "";
 
   async function pedir() {
     setBusy(true);
@@ -41,7 +48,7 @@ export default function PedirAcceso({
       const r = await fetch("/api/tester", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ facebookRef: valor, pista, correoAviso: correo }),
+        body: JSON.stringify({ facebookRef: valor, nombreFb: nombre, pista, correoAviso: correo }),
       });
       const j = (await r.json()) as { error?: string };
       if (!r.ok) throw new Error(j.error ?? "No se pudo enviar");
@@ -120,8 +127,20 @@ export default function PedirAcceso({
               />
             </div>
             <div>
+              <label className="label" htmlFor="nombre2">
+                Tu nombre en Facebook
+              </label>
+              <input
+                id="nombre2"
+                className="input"
+                value={nombre}
+                onChange={(e) => setNombre(e.target.value)}
+                maxLength={120}
+              />
+            </div>
+            <div>
               <label className="label" htmlFor="pista2">
-                Cómo reconocerte
+                Algo más para reconocerte
               </label>
               <textarea
                 id="pista2"
@@ -143,7 +162,7 @@ export default function PedirAcceso({
                 onChange={(e) => setCorreo(e.target.value)}
               />
             </div>
-            <button className="btn btn-ghost" onClick={pedir} disabled={busy || !valor.trim()}>
+            <button className="btn btn-ghost" onClick={pedir} disabled={busy || !completo}>
               {busy ? "Guardando…" : "Guardar cambios"}
             </button>
           </div>
@@ -205,38 +224,60 @@ export default function PedirAcceso({
       </div>
 
       <div className="mt-4">
+        <label className="label" htmlFor="nombrefb">
+          Tu nombre tal como aparece en Facebook
+        </label>
+        <input
+          id="nombrefb"
+          className="input"
+          placeholder="Andrés Suárez"
+          value={nombre}
+          onChange={(e) => setNombre(e.target.value)}
+          maxLength={120}
+          required
+        />
+        <p className="mt-1.5 text-xs" style={{ color: "var(--muted)" }}>
+          Cópialo igualito de tu perfil, con tildes y todo. Es lo que evita que invitemos a otra
+          persona con un correo parecido.
+        </p>
+      </div>
+
+      <div className="mt-4">
         <label className="label" htmlFor="pista">
-          Cómo reconocerte — opcional, pero ayuda
+          Algo más para reconocerte — opcional
         </label>
         <textarea
           id="pista"
           className="input min-h-20 resize-y"
-          placeholder="Tu nombre en Facebook, cómo se ve tu foto de perfil, tu ciudad…"
+          placeholder="Cómo se ve tu foto de perfil, tu ciudad, tu página…"
           value={pista}
           onChange={(e) => setPista(e.target.value)}
           maxLength={500}
         />
         <p className="mt-1.5 text-xs" style={{ color: "var(--muted)" }}>
-          A veces salen varias cuentas parecidas. Con esto damos con la tuya de una y no te
-          invitamos a la persona equivocada.
+          Si hay varios con tu mismo nombre, esto desempata.
         </p>
       </div>
 
       <div className="mt-4">
         <label className="label" htmlFor="correoAviso">
-          Correo donde avisarte — opcional
+          Correo donde avisarte
         </label>
         <input
           id="correoAviso"
           className="input"
           type="email"
-          placeholder="Déjalo vacío para usar el de tu cuenta"
+          placeholder="tucorreo@gmail.com"
           value={correo}
           onChange={(e) => setCorreo(e.target.value)}
+          required
         />
+        <p className="mt-1.5 text-xs" style={{ color: "var(--muted)" }}>
+          Ahí te escribimos cuando el acceso esté listo. Pon uno que mires.
+        </p>
       </div>
 
-      <button className="btn btn-primary mt-5" onClick={pedir} disabled={busy || !valor.trim()}>
+      <button className="btn btn-primary mt-5" onClick={pedir} disabled={busy || !completo}>
         {busy ? "Enviando…" : "Pedir acceso"}
       </button>
 

@@ -17,7 +17,7 @@ export default async function ConectarPage() {
 
   const { data: solicitud } = await sb
     .from("tester_requests")
-    .select("facebook_ref, estado, nota, pista, correo_aviso")
+    .select("facebook_ref, estado, nota, nombre_fb, pista, correo_aviso")
     .eq("user_id", user!.id)
     .maybeSingle();
 
@@ -75,6 +75,7 @@ export default async function ConectarPage() {
         <PedirAcceso
           estado={(solicitud?.estado as "pendiente" | "listo" | "rechazado") ?? "ninguna"}
           refGuardada={solicitud?.facebook_ref ?? null}
+          nombreGuardado={solicitud?.nombre_fb ?? null}
           pistaGuardada={solicitud?.pista ?? null}
           correoGuardado={solicitud?.correo_aviso ?? null}
           nota={solicitud?.nota ?? null}

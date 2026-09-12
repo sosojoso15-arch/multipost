@@ -53,10 +53,18 @@ export async function enlaceDeCobro(opts: {
   const integridad = secretoObligatorio("WOMPI_INTEGRITY_SECRET");
   const moneda = "COP";
 
-  // El orden IMPORTA: referencia + monto + moneda + secreto. Cambiarlo da una
-  // firma valida que Wompi rechaza, y el error que devuelve no dice cual es.
+  // Se calcula UNA vez y se usa para la firma y para el parametro. Si los dos
+  // no son identicos caracter por caracter, Wompi rechaza el pago.
+  const vence = opts.expiraEn ? opts.expiraEn.toISOString() : null;
+
+  // El orden IMPORTA: referencia + monto + moneda + secreto.
+  //
+  // Y ojo con esto, que nos costo un pago rechazado: si se manda
+  // `expiration-time`, la fecha va DENTRO de la firma, entre la moneda y el
+  // secreto. Mandarla en la URL sin meterla aqui da "La firma es invalida",
+  // y el error no dice cual de las dos cosas falta.
   const firma = await sha256(
-    `${opts.referencia}${opts.amountInCents}${moneda}${integridad}`,
+    `${opts.referencia}${opts.amountInCents}${moneda}${vence ?? ""}${integridad}`,
   );
 
   const p = new URLSearchParams({
@@ -68,7 +76,7 @@ export async function enlaceDeCobro(opts: {
     "redirect-url": opts.redirectUrl,
   });
   if (opts.correo) p.set("customer-data:email", opts.correo);
-  if (opts.expiraEn) p.set("expiration-time", opts.expiraEn.toISOString());
+  if (vence) p.set("expiration-time", vence);
 
   return `${CHECKOUT}?${p.toString()}`;
 }

@@ -157,7 +157,7 @@ export default function AdminTesters({ inicial }: { inicial: Solicitud[] }) {
                   </div>
                   <div className="flex shrink-0 flex-col gap-1.5">
                     {s.nombre_fb && <Copiar texto={s.nombre_fb}>Copiar nombre</Copiar>}
-                    <Copiar texto={s.facebook_ref}>Copiar correo</Copiar>
+                    <Copiar texto={s.facebook_ref}>Copiar usuario</Copiar>
                   </div>
                 </div>
 

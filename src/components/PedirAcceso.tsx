@@ -7,6 +7,15 @@ type Estado = "ninguna" | "pendiente" | "listo" | "rechazado";
 
 const ENLACE = "https://www.facebook.com/settings?tab=developer";
 
+/* Donde el cliente se hace desarrollador. Meta lo EXIGE para poder meter a
+   alguien en un rol de la app: sin esto, al invitarlo sale
+   "does not resolve to a valid user ID" y no hay forma de seguir. */
+const ENLACE_DEV = "https://developers.facebook.com/";
+
+/* Donde ve su nombre de usuario. Es el que va al final de la direccion de
+   su perfil, y mucha gente no sabe que existe. */
+const ENLACE_USUARIO = "https://www.facebook.com/settings?tab=account&section=username";
+
 /**
  * El camino corto: en vez de crear su propia app de Meta, el cliente nos
  * deja su usuario de Facebook y nosotros lo metemos como Tester.
@@ -34,12 +43,14 @@ export default function PedirAcceso({
   const [nombre, setNombre] = useState(nombreGuardado ?? "");
   const [pista, setPista] = useState(pistaGuardada ?? "");
   const [correo, setCorreo] = useState(correoGuardado ?? "");
+  const [esDev, setEsDev] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   /* Los tres primeros son obligatorios: sin nombre se puede invitar a la
      cuenta equivocada, y sin correo el aviso no llega a ninguna parte. */
-  const completo = valor.trim() !== "" && nombre.trim() !== "" && correo.trim() !== "";
+  const completo =
+    valor.trim() !== "" && nombre.trim() !== "" && correo.trim() !== "" && esDev;
 
   async function pedir() {
     setBusy(true);
@@ -109,6 +120,14 @@ export default function PedirAcceso({
         <p className="mt-1.5 text-sm" style={{ color: "var(--muted)" }}>
           Pediste acceso como <b className="font-mono">{refGuardada}</b>. Te avisamos al correo
           apenas esté listo — normalmente el mismo día.
+          <br />
+          <span className="mt-1.5 block">
+            Si no te registraste todavía en{" "}
+            <a href={ENLACE_DEV} target="_blank" rel="noreferrer" className="underline">
+              developers.facebook.com
+            </a>
+            , hazlo ahora: sin eso no te podemos invitar.
+          </span>
         </p>
         <details className="mt-3">
           <summary className="cursor-pointer text-xs font-semibold" style={{ color: "var(--muted)" }}>
@@ -117,11 +136,11 @@ export default function PedirAcceso({
           <div className="mt-3 space-y-3">
             <div>
               <label className="label" htmlFor="fbref2">
-                Usuario o correo de Facebook
+                Nombre de usuario de Facebook
               </label>
               <input
                 id="fbref2"
-                className="input"
+                className="input font-mono"
                 value={valor}
                 onChange={(e) => setValor(e.target.value)}
               />
@@ -162,7 +181,11 @@ export default function PedirAcceso({
                 onChange={(e) => setCorreo(e.target.value)}
               />
             </div>
-            <button className="btn btn-ghost" onClick={pedir} disabled={busy || !completo}>
+            <button
+              className="btn btn-ghost"
+              onClick={pedir}
+              disabled={busy || !valor.trim() || !nombre.trim() || !correo.trim()}
+            >
               {busy ? "Guardando…" : "Guardar cambios"}
             </button>
           </div>
@@ -196,30 +219,67 @@ export default function PedirAcceso({
       </p>
       <h2 className="mt-1.5 font-semibold">Nosotros te conectamos</h2>
       <p className="mt-1.5 text-sm" style={{ color: "var(--muted)" }}>
-        Déjanos tu cuenta de Facebook y te damos acceso. No tienes que crear ninguna app ni tocar
-        nada en Meta.
+        No tienes que crear ninguna app. Son dos cosas rápidas y nosotros hacemos el resto.
       </p>
+
+      {/* ---- paso previo: Meta exige que sea desarrollador ---- */}
+      <div
+        className="mt-4 rounded-lg p-3"
+        style={{ background: "var(--background)", border: "1px solid var(--border)" }}
+      >
+        <p className="text-sm font-semibold">Antes que nada: regístrate como desarrollador</p>
+        <p className="mt-1.5 text-xs" style={{ color: "var(--muted)" }}>
+          Es gratis y toma un minuto. Facebook lo exige para poder darte acceso — sin esto no
+          podemos invitarte, aunque nos des bien tus datos.
+        </p>
+        <a href={ENLACE_DEV} target="_blank" rel="noreferrer" className="btn btn-ghost mt-3">
+          Abrir developers.facebook.com ↗
+        </a>
+        <p className="mt-2 text-xs" style={{ color: "var(--muted)" }}>
+          Entra con tu Facebook de siempre y acepta las condiciones. No hay que crear nada.
+        </p>
+
+        <label className="mt-3 flex cursor-pointer items-start gap-2.5 text-sm">
+          <input
+            type="checkbox"
+            className="mt-0.5 shrink-0"
+            checked={esDev}
+            onChange={(e) => setEsDev(e.target.checked)}
+          />
+          <span>Ya me registré como desarrollador</span>
+        </label>
+      </div>
 
       <div className="mt-4">
         <label className="label" htmlFor="fbref">
-          Tu usuario o correo de Facebook
+          Tu nombre de usuario de Facebook
         </label>
         <input
           id="fbref"
-          className="input"
-          placeholder="tucorreo@gmail.com o tu.usuario"
+          className="input font-mono"
+          placeholder="juan.suarez.123"
           value={valor}
           onChange={(e) => setValor(e.target.value)}
           onKeyDown={(e) => {
-            if (e.key === "Enter" && valor.trim()) {
+            if (e.key === "Enter" && completo) {
               e.preventDefault();
               void pedir();
             }
           }}
         />
         <p className="mt-1.5 text-xs" style={{ color: "var(--muted)" }}>
-          Tiene que ser el de tu cuenta <b>de Facebook</b>, que no siempre es el mismo con el que te
-          registraste aquí. Si no coincide, no te vamos a encontrar.
+          Es lo que va al final de la dirección de tu perfil:{" "}
+          <span className="font-mono">facebook.com/<b>juan.suarez.123</b></span>. No sirve el
+          correo — Facebook no lo acepta ahí.{" "}
+          <a
+            href={ENLACE_USUARIO}
+            target="_blank"
+            rel="noreferrer"
+            className="underline"
+            style={{ color: "var(--brand)" }}
+          >
+            Ver el mío
+          </a>
         </p>
       </div>
 

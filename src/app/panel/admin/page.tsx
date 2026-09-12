@@ -40,7 +40,7 @@ export default async function AdminPage() {
       <div className="card mt-5 text-sm">
         <p className="font-semibold">Cómo se hace</p>
         <ol className="mt-2 list-decimal space-y-1.5 pl-5" style={{ color: "var(--muted)" }}>
-          <li>Copia el nombre o el correo de la solicitud.</li>
+          <li>Copia el nombre de usuario de la solicitud.</li>
           <li>
             En tu app de Meta: <b>Roles de la app → Agregar personas</b>, y marca{" "}
             <b>Evaluador</b>.
@@ -49,7 +49,7 @@ export default async function AdminPage() {
               &ldquo;puede probar todos los permisos&rdquo;.
             </span>
           </li>
-          <li>Pega el usuario y envía la invitación.</li>
+          <li>Pega el nombre de usuario y envía la invitación.</li>
           <li>
             Vuelve aquí y dale a <b>Ya lo invité</b>. Ahí se le avisa a esa persona.
           </li>
@@ -58,6 +58,29 @@ export default async function AdminPage() {
         <a href={enlaceRoles()} target="_blank" rel="noreferrer" className="btn btn-primary mt-4">
           Abrir los Roles de mi app ↗
         </a>
+
+        <div
+          className="mt-4 rounded-lg p-3 text-xs"
+          style={{ background: "rgba(217,164,6,.10)", border: "1px solid rgba(217,164,6,.35)" }}
+        >
+          <p className="font-semibold">Si Meta dice &ldquo;does not resolve to a valid user ID&rdquo;</p>
+          <p className="mt-1" style={{ color: "var(--muted)" }}>
+            Son dos motivos, y ninguno es culpa tuya:
+          </p>
+          <ol className="mt-1.5 list-decimal space-y-1 pl-4" style={{ color: "var(--muted)" }}>
+            <li>
+              Esa persona <b>no se ha registrado</b> en developers.facebook.com. Facebook lo exige
+              para poder meterla en un rol.
+            </li>
+            <li>
+              Le pusiste el correo o el nombre. Esa caja solo acepta el{" "}
+              <b>nombre de usuario</b> o el ID numérico.
+            </li>
+          </ol>
+          <p className="mt-1.5" style={{ color: "var(--muted)" }}>
+            Escríbele, que se registre, y vuelve a intentarlo. Los datos suyos ya los tienes.
+          </p>
+        </div>
 
         <p className="mt-3 text-xs" style={{ color: "var(--muted)" }}>
           Ellos aceptan en{" "}

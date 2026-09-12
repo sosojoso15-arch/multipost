@@ -88,5 +88,10 @@ Falta un paso tuyo, y es rápido:
 Esa invitación NO llega por correo: vive escondida en la configuración de
 Facebook, por eso te pasamos el enlace directo.
 
+Si no la ves ahí, casi siempre es porque todavía no te registraste como
+desarrollador en https://developers.facebook.com — entra, acepta las
+condiciones (es gratis y no hay que crear nada) y escríbenos para
+invitarte de nuevo.
+
 Cuando aceptes, ya puedes conectar tus páginas y publicar.`;
 }

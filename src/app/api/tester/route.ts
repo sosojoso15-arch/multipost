@@ -25,7 +25,32 @@ export async function POST(req: Request) {
 
   if (!ref || ref.length < 3) {
     return NextResponse.json(
-      { error: "Escribe el usuario o correo de tu cuenta de Facebook." },
+      { error: "Escribe tu nombre de usuario de Facebook." },
+      { status: 400 },
+    );
+  }
+
+  // Meta NO resuelve correos ni nombres con espacios en la caja de roles:
+  // devuelve "does not resolve to a valid user ID". Solo sirve el nombre de
+  // usuario o el ID numerico. Mejor cortarlo aqui que hacerle perder el
+  // viaje al dueno cuando vaya a invitarlo.
+  if (ref.includes("@")) {
+    return NextResponse.json(
+      {
+        error:
+          "Eso es un correo, y Facebook no lo acepta ahí. Necesitamos tu nombre de usuario: " +
+          "el que sale al final de la dirección de tu perfil, facebook.com/TU.USUARIO",
+      },
+      { status: 400 },
+    );
+  }
+  if (/\s/.test(ref)) {
+    return NextResponse.json(
+      {
+        error:
+          "El nombre de usuario va sin espacios. Míralo al final de la dirección de tu perfil, " +
+          "facebook.com/TU.USUARIO",
+      },
       { status: 400 },
     );
   }

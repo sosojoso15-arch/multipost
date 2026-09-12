@@ -1,8 +1,16 @@
 export type Plan = "free" | "pro" | "agency";
 
-/** Publicaciones por mes. Debe coincidir con plan_limit() en la migracion 0001. */
+/**
+ * Publicaciones por mes.
+ *
+ * `free` da CERO a proposito: se decidio cobrar antes de dar acceso, y un
+ * plan gratis de 30 al mes dejaba publicando a quien se le vencio el plan.
+ * "free" aqui no es un plan, es "no tiene plan".
+ *
+ * Debe coincidir con plan_limit() en la migracion 0009.
+ */
 export const LIMITE_POSTS: Record<Plan, number> = {
-  free: 30,
+  free: 0,
   pro: 1000,
   agency: 100000,
 };

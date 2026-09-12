@@ -2,7 +2,7 @@ import Link from "next/link";
 import { supabaseServer, currentUser } from "@/lib/supabase/server";
 import Composer from "@/components/Composer";
 import Plan from "@/components/Plan";
-import { limitePosts, planVigente } from "@/lib/plans";
+import { haPagado, limitePosts, planVigente } from "@/lib/plans";
 
 export default async function PanelPage() {
   const user = await currentUser();
@@ -27,6 +27,43 @@ export default async function PanelPage() {
   const vigente = planVigente(profile);
   const vencido =
     (profile?.plan ?? "free") !== "free" && vigente === "free" && Boolean(profile?.plan_expires_at);
+
+  /* Sin plan vigente no se publica. Y se dice distinto segun el caso: a
+     quien se le vencio hay que hablarle de renovar, no de empezar. */
+  if (!haPagado(profile)) {
+    const yaPago = (profile?.plan ?? "free") !== "free";
+
+    return (
+      <main className="shell-lectura py-10">
+        <h1 className="text-2xl font-bold">
+          {yaPago ? "Se te venció el plan" : "Todavía no tienes plan"}
+        </h1>
+        <p className="mt-1 text-sm" style={{ color: "var(--muted)" }}>
+          {yaPago
+            ? "Renuévalo y sigues publicando donde quedaste. Tus páginas siguen conectadas."
+            : "Paga el mes y ya puedes conectar tus páginas y publicar."}
+        </p>
+
+        <div className="mt-6">
+          <Plan
+            plan={planVigente(profile)}
+            usados={profile?.posts_used ?? 0}
+            limite={limitePosts(planVigente(profile))}
+            hasta={profile?.plan_expires_at ?? null}
+            vencido={yaPago}
+          />
+        </div>
+
+        {cuentas && cuentas.length > 0 && (
+          <p className="mt-4 text-sm" style={{ color: "var(--muted)" }}>
+            Tienes {cuentas.length} cuenta{cuentas.length === 1 ? "" : "s"} conectada
+            {cuentas.length === 1 ? "" : "s"}. No se pierden: apenas renueves vuelven a estar
+            listas.
+          </p>
+        )}
+      </main>
+    );
+  }
 
   if (!cuentas || cuentas.length === 0) {
     return (

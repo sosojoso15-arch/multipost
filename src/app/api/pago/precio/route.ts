@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { precioEnCentavos, enPesos, PRECIO_USD } from "@/lib/precio";
+import { precioEnCentavos, enPesos, precioUsd } from "@/lib/precio";
 
 /**
  * Cuanto cuesta hoy, para poder MOSTRARLO antes de que nadie haga clic.
@@ -17,7 +17,7 @@ export async function GET() {
     const { amountInCents, trm, fuente } = await precioEnCentavos();
 
     return NextResponse.json({
-      usd: PRECIO_USD,
+      usd: precioUsd(),
       pesos: enPesos(amountInCents),
       trm,
       fuente,
@@ -25,6 +25,6 @@ export async function GET() {
   } catch {
     // Que no se pueda calcular no debe romper el panel: se muestra solo el
     // precio en dolares y ya.
-    return NextResponse.json({ usd: PRECIO_USD }, { status: 200 });
+    return NextResponse.json({ usd: precioUsd() }, { status: 200 });
   }
 }

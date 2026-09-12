@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { PRECIO_USD } from "@/lib/precio";
+import { precioUsd } from "@/lib/precio";
 
 export const metadata: Metadata = {
   title: "Multi-Post — publica en todas tus páginas al mismo tiempo",
@@ -290,7 +290,7 @@ export default function Home() {
               </div>
 
               <p className="mt-4 text-sm" style={{ color: "var(--muted)" }}>
-{PRECIO_USD} USD al mes · sin permanencia · cancelas cuando quieras
+{precioUsd()} USD al mes · sin permanencia · cancelas cuando quieras
               </p>
             </div>
 
@@ -355,7 +355,7 @@ export default function Home() {
                 Plan Pro
               </p>
               <p className="mt-3 flex items-baseline gap-1.5">
-                <span className="text-4xl font-bold tracking-tight">{PRECIO_USD} USD</span>
+                <span className="text-4xl font-bold tracking-tight">{precioUsd()} USD</span>
                 <span className="text-sm" style={{ color: "var(--muted)" }}>
                   / mes
                 </span>

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { currentUser } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { precioEnCentavos, PRECIO_USD, enPesos } from "@/lib/precio";
+import { precioEnCentavos, precioUsd, enPesos } from "@/lib/precio";
 import { enlaceDeCobro, nuevaReferencia } from "@/lib/wompi";
 import { secreto } from "@/lib/env";
 
@@ -36,7 +36,7 @@ export async function POST() {
     reference: referencia,
     amount_in_cents: amountInCents,
     currency: "COP",
-    usd: PRECIO_USD,
+    usd: precioUsd(),
     trm,
     status: "PENDING",
   });
@@ -68,7 +68,7 @@ export async function POST() {
   return NextResponse.json({
     url,
     referencia,
-    usd: PRECIO_USD,
+    usd: precioUsd(),
     pesos,
     trm,
     fuente,

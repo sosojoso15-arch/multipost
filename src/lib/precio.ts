@@ -1,3 +1,5 @@
+import { secreto } from "@/lib/env";
+
 /**
  * El precio, en dolares, cobrado en pesos.
  *
@@ -8,8 +10,23 @@
  * que vale legalmente en Colombia, no una cualquiera de internet.
  */
 
-/** Lo que cuesta un mes. En dolares, que es como esta pensado el precio. */
-export const PRECIO_USD = 45;
+/** Lo que cuesta un mes, si nadie dice otra cosa. */
+const PRECIO_POR_DEFECTO = 45;
+
+/**
+ * El precio de hoy, en dolares.
+ *
+ * Se puede cambiar SIN volver a desplegar, con el secreto PRECIO_USD del
+ * Worker. Sirve para probar el cobro de verdad con 1 USD y volver a 45
+ * despues, en dos comandos y sin tocar codigo.
+ *
+ * Un valor invalido se ignora y se usa el de siempre: es mejor cobrar de
+ * mas por error que regalar el servicio por un dedazo en un secreto.
+ */
+export function precioUsd(): number {
+  const n = Number(secreto("PRECIO_USD"));
+  return Number.isFinite(n) && n > 0 ? n : PRECIO_POR_DEFECTO;
+}
 
 /** Cuantos dias da la prueba, y cuantos da un pago. */
 export const DIAS_PRUEBA = 3;
@@ -99,7 +116,7 @@ export async function precioEnCentavos(): Promise<{
   pesos: number;
 }> {
   const { trm, fuente } = await trmHoy();
-  const pesos = Math.ceil(PRECIO_USD * trm);
+  const pesos = Math.ceil(precioUsd() * trm);
   return { amountInCents: pesos * 100, trm, fuente, pesos };
 }
 

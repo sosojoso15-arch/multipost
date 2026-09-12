@@ -47,7 +47,11 @@ export default function AdminTesters({ inicial }: { inicial: Solicitud[] }) {
   const [error, setError] = useState<string | null>(null);
   const [ocupado, setOcupado] = useState<string | null>(null);
   /** Cuando no hay servicio de correo, aquí queda el texto para mandarlo a mano. */
-  const [aMano, setAMano] = useState<{ para: string; cuerpo: string } | null>(null);
+  const [aMano, setAMano] = useState<{ para: string; cuerpo: string; motivo?: string } | null>(
+    null,
+  );
+  /** Confirmación cuando el correo sí salió solo. */
+  const [enviado, setEnviado] = useState<string | null>(null);
 
   const cargar = useCallback(async () => {
     setError(null);
@@ -65,6 +69,7 @@ export default function AdminTesters({ inicial }: { inicial: Solicitud[] }) {
     setOcupado(id);
     setError(null);
     setAMano(null);
+    setEnviado(null);
     try {
       const r = await fetch("/api/admin/testers", {
         method: "PATCH",
@@ -74,15 +79,22 @@ export default function AdminTesters({ inicial }: { inicial: Solicitud[] }) {
       const j = (await r.json()) as {
         error?: string;
         correoEnviado?: boolean;
+        motivo?: string;
         para?: string;
         cuerpo?: string;
       };
       if (!r.ok) throw new Error(j.error ?? "No se pudo guardar");
 
-      // Sin servicio de correo: se le entrega el texto al dueño para que lo
-      // mande por donde quiera. El flujo no se queda a medias por eso.
-      if (estado === "listo" && !j.correoEnviado && j.cuerpo) {
-        setAMano({ para: j.para ?? "", cuerpo: j.cuerpo });
+      if (estado === "listo") {
+        if (j.correoEnviado) {
+          setEnviado(j.para ?? "");
+          setTimeout(() => setEnviado(null), 6000);
+        } else if (j.cuerpo) {
+          // Sin servicio de correo, o falló el envío: se le entrega el texto
+          // al dueño para que lo mande por donde quiera. El flujo no se queda
+          // a medias por eso.
+          setAMano({ para: j.para ?? "", cuerpo: j.cuerpo, motivo: j.motivo });
+        }
       }
       await cargar();
     } catch (e) {
@@ -104,14 +116,53 @@ export default function AdminTesters({ inicial }: { inicial: Solicitud[] }) {
         </p>
       )}
 
+      {/* ---- salió solo ---- */}
+      {enviado && (
+        <div className="card" style={{ borderColor: "rgba(16,128,74,.45)" }}>
+          <p className="font-semibold" style={{ color: "#10804a" }}>
+            Correo enviado a {enviado}
+          </p>
+          <p className="mt-1 text-sm" style={{ color: "var(--muted)" }}>
+            Ya sabe que tiene que ir a aceptar la invitación.
+          </p>
+        </div>
+      )}
+
       {/* ---- el texto para mandar a mano ---- */}
       {aMano && (
         <div className="card" style={{ borderColor: "var(--brand)" }}>
-          <p className="font-semibold">No hay servicio de correo configurado</p>
+          <p className="font-semibold">El correo no salió solo</p>
           <p className="mt-1 text-sm" style={{ color: "var(--muted)" }}>
             Mándale esto tú a <b style={{ color: "var(--foreground)" }}>{aMano.para}</b>, por
             WhatsApp o por donde hablen.
           </p>
+          {aMano.motivo && (
+            <p className="mt-1.5 font-mono text-xs" style={{ color: "#9a6407" }}>
+              {aMano.motivo}
+            </p>
+          )}
+          <details className="mt-2 text-xs" style={{ color: "var(--muted)" }}>
+            <summary className="cursor-pointer font-semibold">Para que salga solo</summary>
+            <p className="mt-1.5">
+              Crea una cuenta gratis en{" "}
+              <a href="https://www.brevo.com" target="_blank" rel="noreferrer" className="underline">
+                brevo.com
+              </a>
+              , verifica tu correo como remitente, saca una llave de API y ponla en el Worker:
+            </p>
+            <pre
+              className="mt-2 overflow-x-auto rounded-lg p-2.5"
+              style={{ background: "var(--background)", border: "1px solid var(--border)" }}
+            >
+{`npx wrangler secret put BREVO_API_KEY
+npx wrangler secret put CORREO_REMITENTE`}
+            </pre>
+            <p className="mt-1.5">
+              En <b>CORREO_REMITENTE</b> va el correo que verificaste, por ejemplo{" "}
+              <span className="font-mono">Multi-Post &lt;tucorreo@gmail.com&gt;</span>. Brevo deja
+              300 correos al día gratis y <b>no pide dominio propio</b>.
+            </p>
+          </details>
           <pre
             className="mt-3 overflow-x-auto whitespace-pre-wrap rounded-lg p-3 text-xs leading-relaxed"
             style={{ background: "var(--background)", border: "1px solid var(--border)" }}

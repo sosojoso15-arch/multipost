@@ -8,12 +8,15 @@ import { secreto } from "@/lib/env";
  * de administracion entonces muestra el mensaje para copiarlo y mandarlo a
  * mano por WhatsApp o por donde sea.
  *
- * El dia que exista RESEND_API_KEY y CORREO_REMITENTE, empieza a salir
- * solo. No hay que tocar nada mas.
+ * Aguanta dos servicios, y usa el que este configurado:
  *
- * Ojo si lo vas a configurar: para escribirle a CUALQUIER destinatario,
- * Resend exige un dominio propio verificado. Con el remitente de prueba
- * solo se puede escribir a la direccion del dueno de la cuenta.
+ *   BREVO_API_KEY   sirve SIN dominio propio. Se verifica una direccion
+ *                   —un Gmail vale— y ya. Gratis hasta 300 al dia.
+ *   RESEND_API_KEY  entrega mejor, pero para escribirle a cualquiera
+ *                   exige un dominio propio verificado.
+ *
+ * Los dos necesitan CORREO_REMITENTE, que puede ir como
+ * "Multi-Post <hola@ejemplo.com>" o solo el correo.
  */
 export type Correo = {
   para: string;
@@ -23,38 +26,78 @@ export type Correo = {
 };
 
 export async function mandarCorreo(c: Correo): Promise<{ ok: boolean; motivo?: string }> {
-  const llave = secreto("RESEND_API_KEY");
   const remitente = secreto("CORREO_REMITENTE");
-
-  if (!llave || !remitente) {
-    return { ok: false, motivo: "sin servicio de correo configurado" };
+  if (!remitente) {
+    return { ok: false, motivo: "falta CORREO_REMITENTE" };
   }
 
+  const brevo = secreto("BREVO_API_KEY");
+  const resend = secreto("RESEND_API_KEY");
+
+  if (brevo) return porBrevo(brevo, remitente, c);
+  if (resend) return porResend(resend, remitente, c);
+
+  return { ok: false, motivo: "sin servicio de correo configurado" };
+}
+
+/** Saca "Nombre <correo@x.com>" en sus dos partes. Brevo los quiere separados. */
+function partirRemitente(r: string): { email: string; name?: string } {
+  const m = r.match(/^\s*(.*?)\s*<\s*([^>]+)\s*>\s*$/);
+  return m ? { name: m[1] || undefined, email: m[2] } : { email: r.trim() };
+}
+
+/**
+ * Brevo. Es el que sirve sin dominio propio: basta con verificar UNA
+ * direccion de correo —un Gmail vale— desde su panel. Gratis hasta 300
+ * al dia, que para avisar invitaciones sobra.
+ */
+async function porBrevo(llave: string, remitente: string, c: Correo) {
   try {
-    const res = await fetch("https://api.resend.com/emails", {
+    const res = await fetch("https://api.brevo.com/v3/smtp/email", {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${llave}`,
-        "Content-Type": "application/json",
-      },
+      headers: { "api-key": llave, "Content-Type": "application/json", accept: "application/json" },
       body: JSON.stringify({
-        from: remitente,
-        to: [c.para],
+        sender: partirRemitente(remitente),
+        to: [{ email: c.para }],
         subject: c.asunto,
-        text: c.cuerpo,
+        textContent: c.cuerpo,
       }),
     });
 
     if (!res.ok) {
       const detalle = await res.text();
-      console.error(`correo: ${res.status} ${detalle.slice(0, 200)}`);
-      return { ok: false, motivo: `el servicio respondió ${res.status}` };
+      console.error(`correo/brevo: ${res.status} ${detalle.slice(0, 300)}`);
+      return { ok: false, motivo: `Brevo respondió ${res.status}: ${detalle.slice(0, 120)}` };
     }
-
     return { ok: true };
   } catch (e) {
-    console.error("correo:", e instanceof Error ? e.message : e);
-    return { ok: false, motivo: "no se pudo contactar al servicio de correo" };
+    console.error("correo/brevo:", e instanceof Error ? e.message : e);
+    return { ok: false, motivo: "no se pudo contactar a Brevo" };
+  }
+}
+
+/**
+ * Resend. Mejor entrega, pero para escribirle a CUALQUIERA exige un
+ * dominio propio verificado. Con el remitente de prueba solo se puede
+ * escribir a la direccion del dueno de la cuenta.
+ */
+async function porResend(llave: string, remitente: string, c: Correo) {
+  try {
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${llave}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ from: remitente, to: [c.para], subject: c.asunto, text: c.cuerpo }),
+    });
+
+    if (!res.ok) {
+      const detalle = await res.text();
+      console.error(`correo/resend: ${res.status} ${detalle.slice(0, 300)}`);
+      return { ok: false, motivo: `Resend respondió ${res.status}: ${detalle.slice(0, 120)}` };
+    }
+    return { ok: true };
+  } catch (e) {
+    console.error("correo/resend:", e instanceof Error ? e.message : e);
+    return { ok: false, motivo: "no se pudo contactar a Resend" };
   }
 }
 

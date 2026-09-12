@@ -260,6 +260,24 @@ export default function ConnectWizard({
         abierto={abierto === 1}
         onToggle={() => setAbierto(abierto === 1 ? 0 : 1)}
       >
+        <div
+          className="rounded-lg px-3 py-2.5 text-xs"
+          style={{ background: "rgba(217,164,6,.12)", border: "1px solid rgba(217,164,6,.4)" }}
+        >
+          <b>Antes de crear la app, Facebook te va a pedir ser desarrollador</b> y verificar un
+          celular por SMS. Es de Meta, no nuestro. Si te dice que primero agregues el número en el
+          Centro de cuentas, hazlo en{" "}
+          <a
+            href="https://accountscenter.facebook.com/personal_info"
+            target="_blank"
+            rel="noreferrer"
+            className="underline"
+          >
+            Datos personales
+          </a>{" "}
+          y vuelve.
+        </div>
+
         <ol className="list-decimal space-y-2 pl-4 text-sm" style={{ color: "var(--muted)" }}>
           <li>
             Entra a{" "}

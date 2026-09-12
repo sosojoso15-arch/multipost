@@ -238,6 +238,19 @@ export default function PedirAcceso({
         <p className="mt-2 text-xs" style={{ color: "var(--muted)" }}>
           Entra con tu Facebook de siempre y acepta las condiciones. No hay que crear nada.
         </p>
+        <p className="mt-2 text-xs" style={{ color: "var(--muted)" }}>
+          <b>Te va a pedir verificar un celular por SMS.</b> Si te dice que primero lo agregues en
+          el Centro de cuentas, ve a{" "}
+          <a
+            href="https://accountscenter.facebook.com/personal_info"
+            target="_blank"
+            rel="noreferrer"
+            className="underline"
+          >
+            Datos personales
+          </a>
+          , pon el número ahí, y vuelve. Es de Facebook, no nuestro, y no hay forma de saltárselo.
+        </p>
 
         <label className="mt-3 flex cursor-pointer items-start gap-2.5 text-sm">
           <input

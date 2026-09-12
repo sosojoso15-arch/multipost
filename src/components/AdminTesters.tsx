@@ -66,6 +66,15 @@ export default function AdminTesters({ inicial }: { inicial: Solicitud[] }) {
   }, []);
 
   async function marcar(id: string, estado: Solicitud["estado"]) {
+    return llamar(id, { estado });
+  }
+
+  /** Reenviar el aviso sin tocar el estado. */
+  async function reavisar(id: string) {
+    return llamar(id, { accion: "avisar" });
+  }
+
+  async function llamar(id: string, cuerpo: Record<string, string>) {
     setOcupado(id);
     setError(null);
     setAMano(null);
@@ -74,7 +83,7 @@ export default function AdminTesters({ inicial }: { inicial: Solicitud[] }) {
       const r = await fetch("/api/admin/testers", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, estado }),
+        body: JSON.stringify({ id, ...cuerpo }),
       });
       const j = (await r.json()) as {
         error?: string;
@@ -85,7 +94,7 @@ export default function AdminTesters({ inicial }: { inicial: Solicitud[] }) {
       };
       if (!r.ok) throw new Error(j.error ?? "No se pudo guardar");
 
-      if (estado === "listo") {
+      if (cuerpo.accion === "avisar" || cuerpo.estado === "listo") {
         if (j.correoEnviado) {
           setEnviado(j.para ?? "");
           setTimeout(() => setEnviado(null), 6000);
@@ -271,9 +280,22 @@ npx wrangler secret put CORREO_REMITENTE`}
                     sin avisar por correo
                   </span>
                 )}
-                <span className="ml-auto text-xs" style={{ color: "var(--muted)" }}>
+                <span className="text-xs" style={{ color: "var(--muted)" }}>
                   {s.correo_aviso ?? s.correo}
                 </span>
+                {s.estado === "listo" && (
+                  <button
+                    className="btn btn-ghost ml-auto !px-3 !py-1.5 text-xs"
+                    disabled={ocupado === s.id}
+                    onClick={() => reavisar(s.id)}
+                  >
+                    {ocupado === s.id
+                      ? "Enviando…"
+                      : s.avisado_at
+                        ? "Reenviar aviso"
+                        : "Avisarle por correo"}
+                  </button>
+                )}
               </li>
             ))}
           </ul>

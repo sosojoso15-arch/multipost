@@ -26,23 +26,84 @@ export async function GET() {
   return NextResponse.json({ solicitudes: r.filas });
 }
 
-/** Marcar una como lista (o rechazada), y avisarle al cliente. */
+type Admin = ReturnType<typeof supabaseAdmin>;
+
+/**
+ * Le manda el aviso de "ya te invite, ve y acepta".
+ *
+ * Si no se puede mandar, devuelve el texto igual para que el dueno lo
+ * pase a mano. Asi el flujo nunca se queda a medias por un problema de
+ * correo, que es lo de menos.
+ */
+async function avisar(admin: Admin, id: string, userId: string, correoAviso: string | null) {
+  // Si dejo un correo aparte, ese manda: puede que el de su cuenta no lo mire.
+  const { data: u } = await admin.auth.admin.getUserById(userId);
+  const para = correoAviso || u?.user?.email;
+  const appUrl = secreto("NEXT_PUBLIC_APP_URL") ?? "https://multipost.asuarezdev.workers.dev";
+  const cuerpo = mensajeInvitado(appUrl);
+
+  if (!para) {
+    return { ok: true, correoEnviado: false, motivo: "no tiene correo", cuerpo };
+  }
+
+  const envio = await mandarCorreo({
+    para,
+    asunto: "Ya tienes acceso a Multi-Post — falta que aceptes la invitación",
+    cuerpo,
+  });
+
+  if (envio.ok) {
+    await admin
+      .from("tester_requests")
+      .update({ avisado_at: new Date().toISOString() })
+      .eq("id", id);
+  }
+
+  return { ok: true, correoEnviado: envio.ok, motivo: envio.motivo, para, cuerpo };
+}
+
+/** Marcar una como lista (o rechazada), o solo reenviar el aviso. */
 export async function PATCH(req: Request) {
   if (!(await soyElDueno())) {
     return NextResponse.json({ error: "No autorizado" }, { status: 403 });
   }
 
-  const { id, estado, nota } = (await req.json()) as {
+  const { id, estado, nota, accion } = (await req.json()) as {
     id?: string;
     estado?: string;
     nota?: string;
+    accion?: string;
   };
 
-  if (!id || !estado || !["pendiente", "listo", "rechazado"].includes(estado)) {
-    return NextResponse.json({ error: "Datos incompletos" }, { status: 400 });
-  }
+  if (!id) return NextResponse.json({ error: "Falta el id" }, { status: 400 });
 
   const admin = supabaseAdmin();
+
+  // ---- solo reenviar, sin tocar el estado ----
+  if (accion === "avisar") {
+    const { data: fila, error } = await admin
+      .from("tester_requests")
+      .select("id, user_id, correo_aviso, estado")
+      .eq("id", id)
+      .single();
+
+    if (error || !fila) {
+      return NextResponse.json({ error: error?.message ?? "No se encontró" }, { status: 500 });
+    }
+    if (fila.estado !== "listo") {
+      return NextResponse.json(
+        { error: "Solo se avisa cuando la solicitud está lista." },
+        { status: 400 },
+      );
+    }
+
+    return NextResponse.json(await avisar(admin, id, fila.user_id, fila.correo_aviso));
+  }
+
+  // ---- cambiar el estado ----
+  if (!estado || !["pendiente", "listo", "rechazado"].includes(estado)) {
+    return NextResponse.json({ error: "Datos incompletos" }, { status: 400 });
+  }
 
   const { data: fila, error } = await admin
     .from("tester_requests")
@@ -61,36 +122,5 @@ export async function PATCH(req: Request) {
     return NextResponse.json({ ok: true, correoEnviado: false });
   }
 
-  // Si dejo un correo aparte, ese manda: puede que el de su cuenta no lo mire.
-  const { data: u } = await admin.auth.admin.getUserById(fila.user_id);
-  const para = fila.correo_aviso || u?.user?.email;
-  const appUrl = secreto("NEXT_PUBLIC_APP_URL") ?? "https://multipost.asuarezdev.workers.dev";
-  const cuerpo = mensajeInvitado(appUrl);
-
-  if (!para) {
-    return NextResponse.json({ ok: true, correoEnviado: false, motivo: "sin correo", cuerpo });
-  }
-
-  const envio = await mandarCorreo({
-    para,
-    asunto: "Ya tienes acceso a Multi-Post — falta que aceptes la invitación",
-    cuerpo,
-  });
-
-  if (envio.ok) {
-    await admin
-      .from("tester_requests")
-      .update({ avisado_at: new Date().toISOString() })
-      .eq("id", id);
-  }
-
-  // Si no se pudo mandar, se devuelve el texto para copiarlo a mano. Asi el
-  // flujo sirve igual sin servicio de correo contratado.
-  return NextResponse.json({
-    ok: true,
-    correoEnviado: envio.ok,
-    motivo: envio.motivo,
-    para,
-    cuerpo,
-  });
+  return NextResponse.json(await avisar(admin, id, fila.user_id, fila.correo_aviso));
 }

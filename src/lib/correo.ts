@@ -93,5 +93,9 @@ desarrollador en https://developers.facebook.com — entra, acepta las
 condiciones (es gratis y no hay que crear nada) y escríbenos para
 invitarte de nuevo.
 
+Ahí te va a pedir verificar un celular por SMS. Si te rebota, primero
+agrega tu número aquí:
+https://accountscenter.facebook.com/youraccount/contact_points/
+
 Cuando aceptes, ya puedes conectar tus páginas y publicar.`;
 }

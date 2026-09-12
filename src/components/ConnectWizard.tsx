@@ -265,17 +265,16 @@ export default function ConnectWizard({
           style={{ background: "rgba(217,164,6,.12)", border: "1px solid rgba(217,164,6,.4)" }}
         >
           <b>Antes de crear la app, Facebook te va a pedir ser desarrollador</b> y verificar un
-          celular por SMS. Es de Meta, no nuestro. Si te dice que primero agregues el número en el
-          Centro de cuentas, hazlo en{" "}
+          celular por SMS. Si tu número no está todavía en tu cuenta de Facebook, te rebota con un
+          error. Agrégalo primero —son 30 segundos— y vuelve:
           <a
-            href="https://accountscenter.facebook.com/personal_info"
+            href="https://accountscenter.facebook.com/youraccount/contact_points/"
             target="_blank"
             rel="noreferrer"
-            className="underline"
+            className="btn btn-ghost mt-2.5"
           >
-            Datos personales
-          </a>{" "}
-          y vuelve.
+            Agregar mi celular en Facebook ↗
+          </a>
         </div>
 
         <ol className="list-decimal space-y-2 pl-4 text-sm" style={{ color: "var(--muted)" }}>

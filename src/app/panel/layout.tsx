@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { currentUser } from "@/lib/supabase/server";
+import { esAdmin } from "@/lib/admin";
 import LogoutButton from "@/components/LogoutButton";
 
 export default async function PanelLayout({ children }: { children: React.ReactNode }) {
@@ -23,6 +24,13 @@ export default async function PanelLayout({ children }: { children: React.ReactN
             <Link href="/panel/conectar" className="whitespace-nowrap text-sm hover:underline">
               Mis cuentas
             </Link>
+            {/* Solo para quien administra. La reja de verdad está en la ruta
+                de API; esto únicamente evita mostrar un enlace inútil. */}
+            {esAdmin(user?.email) && (
+              <Link href="/panel/admin" className="whitespace-nowrap text-sm hover:underline">
+                Solicitudes
+              </Link>
+            )}
           </div>
           <div className="ml-auto flex min-w-0 items-center gap-3">
             {/* El correo se recorta en vez de empujar al botón de salir fuera

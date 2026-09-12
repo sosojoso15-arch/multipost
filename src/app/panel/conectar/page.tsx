@@ -1,6 +1,7 @@
 import { supabaseServer, currentUser } from "@/lib/supabase/server";
 import ConnectWizard from "@/components/ConnectWizard";
 import { redirectUri } from "@/lib/metaOauth";
+import PedirAcceso from "@/components/PedirAcceso";
 
 export default async function ConectarPage() {
   const user = await currentUser();
@@ -14,6 +15,12 @@ export default async function ConectarPage() {
     .limit(1)
     .maybeSingle();
 
+  const { data: solicitud } = await sb
+    .from("tester_requests")
+    .select("facebook_ref, estado, nota")
+    .eq("user_id", user!.id)
+    .maybeSingle();
+
   const { data: cuentas } = await sb
     .from("accounts")
     .select("id, platform, name, picture_url, last_error")
@@ -25,7 +32,7 @@ export default async function ConectarPage() {
     <main className="shell-lectura py-10">
       <h1 className="text-2xl font-bold">Mis cuentas</h1>
       <p className="mt-1 text-sm" style={{ color: "var(--muted)" }}>
-        Cinco pasos cortos, una sola vez. Después solo publicas.
+        Hay dos caminos. El corto es que nosotros te conectemos.
       </p>
 
       {cuentas && cuentas.length > 0 && (
@@ -61,7 +68,28 @@ export default async function ConectarPage() {
         </div>
       )}
 
+      {/* El camino corto va PRIMERO y el largo queda plegado debajo: si los
+          dos se ven igual de grandes, la gente empieza por el de arriba y la
+          mitad se pierde creando una app que no necesita. */}
       <div className="mt-6">
+        <PedirAcceso
+          estado={(solicitud?.estado as "pendiente" | "listo" | "rechazado") ?? "ninguna"}
+          refGuardada={solicitud?.facebook_ref ?? null}
+          nota={solicitud?.nota ?? null}
+        />
+      </div>
+
+      <details className="mt-4">
+        <summary className="cursor-pointer text-sm font-semibold">
+          O hazlo tú con tu propia app de Meta
+          <span className="ml-2 font-normal" style={{ color: "var(--muted)" }}>
+            — cinco pasos, unos tres minutos
+          </span>
+        </summary>
+        <p className="mt-2 text-xs" style={{ color: "var(--muted)" }}>
+          Con esto no dependes de que te demos acceso, y los permisos quedan a tu nombre.
+        </p>
+        <div className="mt-4">
         <ConnectWizard
           redirectUri={redirectUri()}
           appGuardada={
@@ -75,7 +103,8 @@ export default async function ConectarPage() {
               : null
           }
         />
-      </div>
+        </div>
+      </details>
     </main>
   );
 }

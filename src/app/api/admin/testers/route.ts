@@ -21,14 +21,9 @@ export async function GET() {
     return NextResponse.json({ error: "No autorizado" }, { status: 403 });
   }
 
-  try {
-    return NextResponse.json({ solicitudes: await listarSolicitudes() });
-  } catch (e) {
-    return NextResponse.json(
-      { error: e instanceof Error ? e.message : "No se pudo leer" },
-      { status: 500 },
-    );
-  }
+  const r = await listarSolicitudes();
+  if (!r.ok) return NextResponse.json({ error: r.error }, { status: 500 });
+  return NextResponse.json({ solicitudes: r.filas });
 }
 
 /** Marcar una como lista (o rechazada), y avisarle al cliente. */

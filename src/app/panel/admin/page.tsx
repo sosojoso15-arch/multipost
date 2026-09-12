@@ -24,6 +24,12 @@ export default async function AdminPage() {
     );
   }
 
+  /* No lanza: si algo falla devuelve el motivo, y se muestra. Un 500 pelado
+     —"A server error occurred"— no deja por donde empezar a buscar. */
+  const r = await listarSolicitudes();
+  const faltaTabla =
+    !r.ok && /tester_requests|does not exist|schema cache|relation/i.test(r.error);
+
   return (
     <main className="shell-lectura py-8 sm:py-10">
       <h1 className="text-2xl font-bold tracking-tight">Solicitudes de acceso</h1>
@@ -34,9 +40,7 @@ export default async function AdminPage() {
       <div className="card mt-5 text-sm">
         <p className="font-semibold">Cómo se hace</p>
         <ol className="mt-2 list-decimal space-y-1.5 pl-5" style={{ color: "var(--muted)" }}>
-          <li>
-            Copia el usuario de Facebook de la solicitud.
-          </li>
+          <li>Copia el nombre o el correo de la solicitud.</li>
           <li>
             En tu app de Meta: <b>Roles de la app → Agregar personas</b>, y marca{" "}
             <b>Evaluador</b>.
@@ -50,12 +54,8 @@ export default async function AdminPage() {
             Vuelve aquí y dale a <b>Ya lo invité</b>. Ahí se le avisa a esa persona.
           </li>
         </ol>
-        <a
-          href={enlaceRoles()}
-          target="_blank"
-          rel="noreferrer"
-          className="btn btn-primary mt-4"
-        >
+
+        <a href={enlaceRoles()} target="_blank" rel="noreferrer" className="btn btn-primary mt-4">
           Abrir los Roles de mi app ↗
         </a>
 
@@ -69,7 +69,43 @@ export default async function AdminPage() {
       </div>
 
       <div className="mt-6">
-        <AdminTesters inicial={await listarSolicitudes()} />
+        {r.ok ? (
+          <AdminTesters inicial={r.filas} />
+        ) : (
+          <div className="card" style={{ borderColor: "#e0b4b4" }}>
+            <p className="font-semibold">No se pudo leer las solicitudes</p>
+
+            {faltaTabla ? (
+              <>
+                <p className="mt-1.5 text-sm" style={{ color: "var(--muted)" }}>
+                  Falta correr una migración en Supabase. Son estas, en orden:
+                </p>
+                <pre
+                  className="mt-3 overflow-x-auto rounded-lg p-3 text-xs"
+                  style={{ background: "var(--background)", border: "1px solid var(--border)" }}
+                >
+                  {[
+                    "supabase/migrations/0006_solicitudes_tester.sql",
+                    "supabase/migrations/0007_pista_y_correo.sql",
+                    "supabase/migrations/0008_nombre_facebook.sql",
+                  ].join("\n")}
+                </pre>
+                <p className="mt-3 text-xs" style={{ color: "var(--muted)" }}>
+                  Supabase → SQL Editor → pega cada una → Run. Todas usan{" "}
+                  <code>if not exists</code>, así que repetir una no rompe nada.
+                </p>
+              </>
+            ) : (
+              <p className="mt-1.5 text-sm" style={{ color: "var(--muted)" }}>
+                Puede que falte el secreto <code>SUPABASE_SERVICE_ROLE_KEY</code> en el Worker.
+              </p>
+            )}
+
+            <p className="mt-3 font-mono text-xs" style={{ color: "#c2352f" }}>
+              {r.error}
+            </p>
+          </div>
+        )}
       </div>
     </main>
   );

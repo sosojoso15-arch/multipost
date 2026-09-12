@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { PRECIO_USD, DIAS_PRUEBA } from "@/lib/precio";
+import { PRECIO_USD } from "@/lib/precio";
 
 export const metadata: Metadata = {
   title: "Multi-Post — publica en todas tus páginas al mismo tiempo",
@@ -168,8 +168,8 @@ function MuestraDelPanel() {
 
 const PASOS = [
   {
-    t: "Conecta tus páginas",
-    d: "Una configuración de una sola vez, guiada paso a paso. Unos tres minutos, y no la vuelves a ver.",
+    t: "Paga el mes y conecta",
+    d: "Te guiamos paso a paso, o lo hacemos por ti. Es de una sola vez: después no lo vuelves a ver.",
   },
   {
     t: "Escribe una vez",
@@ -290,7 +290,7 @@ export default function Home() {
               </div>
 
               <p className="mt-4 text-sm" style={{ color: "var(--muted)" }}>
-                {DIAS_PRUEBA} días de prueba · sin tarjeta · cancelas cuando quieras
+{PRECIO_USD} USD al mes · sin permanencia · cancelas cuando quieras
               </p>
             </div>
 
@@ -365,10 +365,10 @@ export default function Home() {
               </p>
 
               <Link href="/registro" className="btn btn-primary mt-5 w-full !py-2.5">
-                Probar {DIAS_PRUEBA} días gratis
+Empezar ahora
               </Link>
               <p className="mt-2 text-center text-xs" style={{ color: "var(--muted)" }}>
-                No pedimos tarjeta para la prueba.
+                Pagas el mes y conectas tus páginas de una.
               </p>
             </div>
 

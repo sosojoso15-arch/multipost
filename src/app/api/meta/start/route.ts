@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { supabaseServer } from "@/lib/supabase/server";
 import { authorizeUrl } from "@/lib/meta";
 import { STATE_COOKIE, redirectUri, popupResponse } from "@/lib/metaOauth";
+import { haPagado } from "@/lib/plans";
 
 /**
  * Manda al cliente a la pantalla de permisos de Facebook.
@@ -15,6 +16,16 @@ export async function GET() {
     data: { user },
   } = await sb.auth.getUser();
   if (!user) return popupResponse({ ok: false, error: "Tu sesión venció. Vuelve a entrar." });
+
+  const { data: perfil } = await sb
+    .from("profiles")
+    .select("plan, plan_expires_at")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (!haPagado(perfil)) {
+    return popupResponse({ ok: false, error: "Primero hay que pagar el plan." });
+  }
 
   const { data: app } = await sb
     .from("meta_apps")

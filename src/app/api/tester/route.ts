@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
+import { haPagado } from "@/lib/plans";
 
 /**
  * El cliente pide acceso: nos deja su usuario de Facebook y espera a que
@@ -8,12 +9,31 @@ import { supabaseServer } from "@/lib/supabase/server";
  * Es el camino corto. El largo —crear su propia app de Meta— sigue ahi
  * para quien lo prefiera o para cuando se llene el cupo de testers.
  */
+
+/** Cobrar antes de dar acceso. La pantalla ya lo bloquea, pero eso se salta
+ *  con una peticion a mano: la reja de verdad va aqui. */
+async function tienePlan(sb: Awaited<ReturnType<typeof supabaseServer>>, userId: string) {
+  const { data } = await sb
+    .from("profiles")
+    .select("plan, plan_expires_at")
+    .eq("id", userId)
+    .maybeSingle();
+  return haPagado(data);
+}
+
 export async function POST(req: Request) {
   const sb = await supabaseServer();
   const {
     data: { user },
   } = await sb.auth.getUser();
   if (!user) return NextResponse.json({ error: "No autenticado" }, { status: 401 });
+
+  if (!(await tienePlan(sb, user.id))) {
+    return NextResponse.json(
+      { error: "Primero hay que pagar el plan." },
+      { status: 402 },
+    );
+  }
 
   const { facebookRef, nombreFb, pista, correoAviso } = (await req.json()) as {
     facebookRef?: string;

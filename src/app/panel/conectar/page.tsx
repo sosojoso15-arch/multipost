@@ -2,6 +2,9 @@ import { supabaseServer, currentUser } from "@/lib/supabase/server";
 import ConnectWizard from "@/components/ConnectWizard";
 import { redirectUri } from "@/lib/metaOauth";
 import PedirAcceso from "@/components/PedirAcceso";
+import Plan from "@/components/Plan";
+import { haPagado, limitePosts, planVigente } from "@/lib/plans";
+import Link from "next/link";
 
 export default async function ConectarPage() {
   const user = await currentUser();
@@ -21,12 +24,57 @@ export default async function ConectarPage() {
     .eq("user_id", user!.id)
     .maybeSingle();
 
+  const { data: perfil } = await sb
+    .from("profiles")
+    .select("plan, posts_used, plan_expires_at")
+    .eq("id", user!.id)
+    .maybeSingle();
+
   const { data: cuentas } = await sb
     .from("accounts")
     .select("id, platform, name, picture_url, last_error")
     .eq("user_id", user!.id)
     .order("platform")
     .order("name");
+
+  /* Cobrar antes de dar acceso. Invitar a alguien como Evaluador en Meta es
+     trabajo manual, y hacerlo para quien no ha pagado sale caro en tiempo. */
+  if (!haPagado(perfil)) {
+    return (
+      <main className="shell-lectura py-10">
+        <h1 className="text-2xl font-bold">Primero el plan</h1>
+        <p className="mt-1 text-sm" style={{ color: "var(--muted)" }}>
+          Cuando esté pagado, conectamos tus páginas y empiezas a publicar.
+        </p>
+
+        <div className="mt-6">
+          <Plan
+            plan={planVigente(perfil)}
+            usados={perfil?.posts_used ?? 0}
+            limite={limitePosts(planVigente(perfil))}
+            hasta={perfil?.plan_expires_at ?? null}
+            vencido={(perfil?.plan ?? "free") !== "free"}
+          />
+        </div>
+
+        <div className="card mt-4">
+          <p className="font-semibold">Qué pasa después de pagar</p>
+          <ol className="mt-2 list-decimal space-y-1.5 pl-5 text-sm" style={{ color: "var(--muted)" }}>
+            <li>Se abre esta misma pantalla con el asistente.</li>
+            <li>Nos dejas tu cuenta de Facebook y te damos acceso, o lo haces tú con tu propia app.</li>
+            <li>Conectas tus páginas y publicas en todas a la vez.</li>
+          </ol>
+          <p className="mt-3 text-xs" style={{ color: "var(--muted)" }}>
+            ¿Dudas antes de pagar? Mira{" "}
+            <Link href="/#como" className="underline">
+              cómo funciona
+            </Link>
+            .
+          </p>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="shell-lectura py-10">

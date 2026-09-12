@@ -19,40 +19,32 @@ export type EstadoPlan = {
 };
 
 /**
+ * ¿Tiene un plan PAGADO y vigente?
+ *
+ * Es la unica puerta para conectar paginas. Se decidio cobrar primero y
+ * despues dar acceso: invitar a alguien como Evaluador en Meta es trabajo
+ * manual, y hacerlo para quien no ha pagado sale caro en tiempo.
+ *
+ * La columna `plan` no se limpia sola al vencerse —sigue diciendo 'pro' un
+ * mes despues—, por eso siempre hay que mirar tambien `plan_expires_at`.
+ */
+export function haPagado(p: EstadoPlan | null | undefined): boolean {
+  if (!p?.plan || p.plan === "free") return false;
+  const vence = p.plan_expires_at ? new Date(p.plan_expires_at).getTime() : null;
+  return vence === null || vence > Date.now();
+}
+
+/**
  * El plan que vale HOY, que no es lo mismo que la columna `plan`.
  *
  * La columna no se borra sola cuando se vence: dice 'pro' un mes despues de
  * que dejo de estar pagado. Mirar eso a secas regala el servicio para siempre
  * a quien pago una vez.
  *
- * Y al reves: quien esta en la prueba tiene `plan = 'free'` en la columna. Si
- * se mirara solo eso, la prueba daria 30 publicaciones — el plan gratis de
- * toda la vida— que es justo lo contrario de una prueba.
- *
- * Mismo criterio que `plan_vigente()` en la migracion 0005. Si cambia uno,
- * cambia el otro.
+ * La prueba de 3 dias ya NO da plan: se decidio cobrar antes de dar acceso.
+ * La columna `trial_ends_at` se queda en la base por las cuentas viejas, pero
+ * no la mira nadie.
  */
 export function planVigente(p: EstadoPlan | null | undefined): Plan {
-  if (!p) return "free";
-  const ahora = Date.now();
-
-  const vence = p.plan_expires_at ? new Date(p.plan_expires_at).getTime() : null;
-  if (p.plan && p.plan !== "free" && (vence === null || vence > ahora)) {
-    return p.plan as Plan;
-  }
-
-  const prueba = p.trial_ends_at ? new Date(p.trial_ends_at).getTime() : null;
-  if (prueba !== null && prueba > ahora) return "pro"; // la prueba da lo mismo que Pro
-
-  return "free";
-}
-
-/** ¿Esta en los dias de prueba ahora mismo? Para poder decirselo. */
-export function enPrueba(p: EstadoPlan | null | undefined): boolean {
-  if (!p?.trial_ends_at) return false;
-  const fin = new Date(p.trial_ends_at).getTime();
-  if (!(fin > Date.now())) return false;
-  // Si ya pago, no esta "en prueba": esta pagando.
-  const vence = p.plan_expires_at ? new Date(p.plan_expires_at).getTime() : null;
-  return !(p.plan && p.plan !== "free" && (vence === null || vence > Date.now()));
+  return haPagado(p) ? (p!.plan as Plan) : "free";
 }

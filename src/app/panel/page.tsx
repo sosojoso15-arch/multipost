@@ -2,7 +2,7 @@ import Link from "next/link";
 import { supabaseServer, currentUser } from "@/lib/supabase/server";
 import Composer from "@/components/Composer";
 import Plan from "@/components/Plan";
-import { limitePosts, planVigente, enPrueba } from "@/lib/plans";
+import { limitePosts, planVigente } from "@/lib/plans";
 
 export default async function PanelPage() {
   const user = await currentUser();
@@ -25,7 +25,6 @@ export default async function PanelPage() {
   /* El plan que vale HOY. La columna `plan` sigue diciendo 'pro' un mes
      despues de vencerse, y quien esta en la prueba la tiene en 'free'. */
   const vigente = planVigente(profile);
-  const prueba = enPrueba(profile);
   const vencido =
     (profile?.plan ?? "free") !== "free" && vigente === "free" && Boolean(profile?.plan_expires_at);
 
@@ -57,8 +56,7 @@ export default async function PanelPage() {
           plan={vigente}
           usados={profile?.posts_used ?? 0}
           limite={limitePosts(vigente)}
-          enPrueba={prueba}
-          hasta={prueba ? (profile?.trial_ends_at ?? null) : (profile?.plan_expires_at ?? null)}
+          hasta={profile?.plan_expires_at ?? null}
           vencido={vencido}
         />
       </div>

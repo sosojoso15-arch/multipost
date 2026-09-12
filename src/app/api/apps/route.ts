@@ -1,18 +1,35 @@
 import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
 import { encrypt } from "@/lib/crypto";
+import { haPagado } from "@/lib/plans";
 
 /**
  * Guarda (o actualiza) la app de Meta que creo el usuario.
  * El App Secret es obligatorio: sin el no se puede cambiar el ?code=
  * por un token, que es como funciona todo el flujo.
  */
+
+/** Cobrar antes de dar acceso. La pantalla ya lo bloquea, pero eso se salta
+ *  con una peticion a mano: la reja de verdad va aqui. */
+async function tienePlan(sb: Awaited<ReturnType<typeof supabaseServer>>, userId: string) {
+  const { data } = await sb
+    .from("profiles")
+    .select("plan, plan_expires_at")
+    .eq("id", userId)
+    .maybeSingle();
+  return haPagado(data);
+}
+
 export async function POST(req: Request) {
   const sb = await supabaseServer();
   const {
     data: { user },
   } = await sb.auth.getUser();
   if (!user) return NextResponse.json({ error: "No autenticado" }, { status: 401 });
+
+  if (!(await tienePlan(sb, user.id))) {
+    return NextResponse.json({ error: "Primero hay que pagar el plan." }, { status: 402 });
+  }
 
   const body = (await req.json()) as {
     appId?: string;

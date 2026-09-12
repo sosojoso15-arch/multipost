@@ -6,7 +6,6 @@ type Props = {
   plan: string;
   usados: number;
   limite: number;
-  enPrueba: boolean;
   /** Cuando se acaba la prueba, o hasta cuando vale el plan pagado. */
   hasta: string | null;
   vencido: boolean;
@@ -22,7 +21,7 @@ function diasHasta(iso: string | null): number | null {
   return Math.max(0, Math.ceil(ms / 86400000));
 }
 
-export default function Plan({ plan, usados, limite, enPrueba, hasta, vencido }: Props) {
+export default function Plan({ plan, usados, limite, hasta, vencido }: Props) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [precio, setPrecio] = useState<{ pesos?: string; trm?: number } | null>(null);
@@ -72,10 +71,6 @@ export default function Plan({ plan, usados, limite, enPrueba, hasta, vencido }:
     titulo = "Se te venció el plan";
     detalle = "Renuévalo para seguir publicando en todas tus páginas.";
     urge = true;
-  } else if (enPrueba) {
-    titulo = dias === 1 ? "Te queda 1 día de prueba" : `Te quedan ${dias} días de prueba`;
-    detalle = "Después son 45 USD al mes. Wompi cobra en pesos, a la tasa del día.";
-    urge = dias !== null && dias <= 1;
   } else if (plan !== "free") {
     titulo = `Plan ${plan}`;
     detalle =
@@ -85,8 +80,9 @@ export default function Plan({ plan, usados, limite, enPrueba, hasta, vencido }:
           ? "Se renueva mañana."
           : `Te quedan ${dias} días.`;
   } else {
-    titulo = "Plan gratis";
-    detalle = `${limite} publicaciones al mes. Con Pro son 1.000.`;
+    titulo = "Todavía no tienes plan";
+    detalle = "Paga el mes y ya puedes conectar tus páginas y publicar.";
+    urge = true;
   }
 
   return (
@@ -100,15 +96,17 @@ export default function Plan({ plan, usados, limite, enPrueba, hasta, vencido }:
           <p className="mt-0.5 text-sm" style={{ color: "var(--muted)" }}>
             {detalle}
           </p>
-          <p className="mt-2 text-xs" style={{ color: "var(--muted)" }}>
-            {usados} de {limite === 100000 ? "las que quieras" : limite} publicaciones este mes
-          </p>
+          {plan !== "free" && (
+            <p className="mt-2 text-xs" style={{ color: "var(--muted)" }}>
+              {usados} de {limite === 100000 ? "las que quieras" : limite} publicaciones este mes
+            </p>
+          )}
         </div>
 
-        {(vencido || enPrueba || plan === "free") && (
+        {(vencido || plan === "free") && (
           <div className="flex shrink-0 flex-col items-stretch gap-1 sm:items-end">
             <button className="btn btn-primary" onClick={pagar} disabled={busy}>
-              {busy ? "Abriendo el pago…" : vencido ? "Renovar — 45 USD" : "Pasar a Pro — 45 USD"}
+              {busy ? "Abriendo el pago…" : vencido ? "Renovar — 45 USD" : "Pagar el mes — 45 USD"}
             </button>
             <p className="text-center text-xs sm:text-right" style={{ color: "var(--muted)" }}>
               {precio?.pesos ? (

@@ -17,14 +17,20 @@ const ENLACE = "https://www.facebook.com/settings?tab=developer";
 export default function PedirAcceso({
   estado,
   refGuardada,
+  pistaGuardada,
+  correoGuardado,
   nota,
 }: {
   estado: Estado;
   refGuardada: string | null;
+  pistaGuardada: string | null;
+  correoGuardado: string | null;
   nota: string | null;
 }) {
   const router = useRouter();
   const [valor, setValor] = useState(refGuardada ?? "");
+  const [pista, setPista] = useState(pistaGuardada ?? "");
+  const [correo, setCorreo] = useState(correoGuardado ?? "");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -35,7 +41,7 @@ export default function PedirAcceso({
       const r = await fetch("/api/tester", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ facebookRef: valor }),
+        body: JSON.stringify({ facebookRef: valor, pista, correoAviso: correo }),
       });
       const j = (await r.json()) as { error?: string };
       if (!r.ok) throw new Error(j.error ?? "No se pudo enviar");
@@ -97,20 +103,51 @@ export default function PedirAcceso({
           Pediste acceso como <b className="font-mono">{refGuardada}</b>. Te avisamos al correo
           apenas esté listo — normalmente el mismo día.
         </p>
-        <p className="mt-3 text-xs" style={{ color: "var(--muted)" }}>
-          ¿Te equivocaste de usuario? Escríbelo bien y vuelve a enviarlo.
-        </p>
-        <div className="mt-3 flex flex-wrap items-end gap-2">
-          <input
-            className="input flex-1"
-            value={valor}
-            onChange={(e) => setValor(e.target.value)}
-            aria-label="Usuario de Facebook"
-          />
-          <button className="btn btn-ghost" onClick={pedir} disabled={busy || !valor.trim()}>
-            {busy ? "Guardando…" : "Corregir"}
-          </button>
-        </div>
+        <details className="mt-3">
+          <summary className="cursor-pointer text-xs font-semibold" style={{ color: "var(--muted)" }}>
+            Corregir mis datos
+          </summary>
+          <div className="mt-3 space-y-3">
+            <div>
+              <label className="label" htmlFor="fbref2">
+                Usuario o correo de Facebook
+              </label>
+              <input
+                id="fbref2"
+                className="input"
+                value={valor}
+                onChange={(e) => setValor(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="label" htmlFor="pista2">
+                Cómo reconocerte
+              </label>
+              <textarea
+                id="pista2"
+                className="input min-h-20 resize-y"
+                value={pista}
+                onChange={(e) => setPista(e.target.value)}
+                maxLength={500}
+              />
+            </div>
+            <div>
+              <label className="label" htmlFor="correo2">
+                Correo donde avisarte
+              </label>
+              <input
+                id="correo2"
+                className="input"
+                type="email"
+                value={correo}
+                onChange={(e) => setCorreo(e.target.value)}
+              />
+            </div>
+            <button className="btn btn-ghost" onClick={pedir} disabled={busy || !valor.trim()}>
+              {busy ? "Guardando…" : "Guardar cambios"}
+            </button>
+          </div>
+        </details>
         {error && (
           <p className="mt-2 text-sm" style={{ color: "#c2352f" }}>
             {error}
@@ -167,7 +204,39 @@ export default function PedirAcceso({
         </p>
       </div>
 
-      <button className="btn btn-primary mt-4" onClick={pedir} disabled={busy || !valor.trim()}>
+      <div className="mt-4">
+        <label className="label" htmlFor="pista">
+          Cómo reconocerte — opcional, pero ayuda
+        </label>
+        <textarea
+          id="pista"
+          className="input min-h-20 resize-y"
+          placeholder="Tu nombre en Facebook, cómo se ve tu foto de perfil, tu ciudad…"
+          value={pista}
+          onChange={(e) => setPista(e.target.value)}
+          maxLength={500}
+        />
+        <p className="mt-1.5 text-xs" style={{ color: "var(--muted)" }}>
+          A veces salen varias cuentas parecidas. Con esto damos con la tuya de una y no te
+          invitamos a la persona equivocada.
+        </p>
+      </div>
+
+      <div className="mt-4">
+        <label className="label" htmlFor="correoAviso">
+          Correo donde avisarte — opcional
+        </label>
+        <input
+          id="correoAviso"
+          className="input"
+          type="email"
+          placeholder="Déjalo vacío para usar el de tu cuenta"
+          value={correo}
+          onChange={(e) => setCorreo(e.target.value)}
+        />
+      </div>
+
+      <button className="btn btn-primary mt-5" onClick={pedir} disabled={busy || !valor.trim()}>
         {busy ? "Enviando…" : "Pedir acceso"}
       </button>
 

@@ -7,6 +7,9 @@ export type Solicitud = {
   nota: string | null;
   avisado_at: string | null;
   created_at: string;
+  pista: string | null;
+  correo_aviso: string | null;
+  /** El correo de su cuenta. A donde se avisa es `correo_aviso ?? correo`. */
   correo: string | null;
 };
 
@@ -22,7 +25,7 @@ export async function listarSolicitudes(): Promise<Solicitud[]> {
 
   const { data, error } = await admin
     .from("tester_requests")
-    .select("id, user_id, facebook_ref, estado, nota, avisado_at, created_at")
+    .select("id, user_id, facebook_ref, estado, nota, avisado_at, created_at, pista, correo_aviso")
     .order("created_at", { ascending: true });
 
   if (error) throw new Error(error.message);

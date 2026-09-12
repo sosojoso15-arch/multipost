@@ -53,7 +53,7 @@ export async function PATCH(req: Request) {
     .from("tester_requests")
     .update({ estado, nota: nota ?? null, updated_at: new Date().toISOString() })
     .eq("id", id)
-    .select("id, user_id")
+    .select("id, user_id, correo_aviso")
     .single();
 
   if (error || !fila) {
@@ -66,8 +66,9 @@ export async function PATCH(req: Request) {
     return NextResponse.json({ ok: true, correoEnviado: false });
   }
 
+  // Si dejo un correo aparte, ese manda: puede que el de su cuenta no lo mire.
   const { data: u } = await admin.auth.admin.getUserById(fila.user_id);
-  const para = u?.user?.email;
+  const para = fila.correo_aviso || u?.user?.email;
   const appUrl = secreto("NEXT_PUBLIC_APP_URL") ?? "https://multipost.asuarezdev.workers.dev";
   const cuerpo = mensajeInvitado(appUrl);
 

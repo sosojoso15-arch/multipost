@@ -15,7 +15,11 @@ export async function POST(req: Request) {
   } = await sb.auth.getUser();
   if (!user) return NextResponse.json({ error: "No autenticado" }, { status: 401 });
 
-  const { facebookRef } = (await req.json()) as { facebookRef?: string };
+  const { facebookRef, pista, correoAviso } = (await req.json()) as {
+    facebookRef?: string;
+    pista?: string;
+    correoAviso?: string;
+  };
   const ref = facebookRef?.trim();
 
   if (!ref || ref.length < 3) {
@@ -28,12 +32,26 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Eso es demasiado largo." }, { status: 400 });
   }
 
+  const aviso = correoAviso?.trim() || null;
+  if (aviso && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(aviso)) {
+    return NextResponse.json({ error: "Ese correo no se ve bien escrito." }, { status: 400 });
+  }
+
+  // Tope generoso pero tope: es un campo libre que escribe cualquiera.
+  const laPista = pista?.trim().slice(0, 500) || null;
+
   // upsert y no insert: pedir dos veces corrige el dato en vez de fallar.
   // El estado NO se toca aqui, para no revivir una ya resuelta.
   const { error } = await sb
     .from("tester_requests")
     .upsert(
-      { user_id: user.id, facebook_ref: ref, updated_at: new Date().toISOString() },
+      {
+        user_id: user.id,
+        facebook_ref: ref,
+        pista: laPista,
+        correo_aviso: aviso,
+        updated_at: new Date().toISOString(),
+      },
       { onConflict: "user_id" },
     );
 

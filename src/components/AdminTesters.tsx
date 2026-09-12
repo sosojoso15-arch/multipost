@@ -143,12 +143,32 @@ export default function AdminTesters({ inicial }: { inicial: Solicitud[] }) {
                   <div className="min-w-0">
                     <p className="font-mono text-sm font-semibold">{s.facebook_ref}</p>
                     <p className="mt-0.5 text-xs" style={{ color: "var(--muted)" }}>
-                      {s.correo ?? "sin correo"} ·{" "}
-                      {new Date(s.created_at).toLocaleDateString("es-CO")}
+                      {new Date(s.created_at).toLocaleDateString("es-CO")} · avisar a{" "}
+                      <b style={{ color: "var(--foreground)" }}>
+                        {s.correo_aviso ?? s.correo ?? "sin correo"}
+                      </b>
+                      {s.correo_aviso && s.correo && s.correo_aviso !== s.correo && (
+                        <span> (su cuenta es {s.correo})</span>
+                      )}
                     </p>
                   </div>
                   <Copiar texto={s.facebook_ref}>Copiar usuario</Copiar>
                 </div>
+
+                {s.pista && (
+                  <div
+                    className="mt-3 rounded-lg p-3"
+                    style={{ background: "var(--background)", border: "1px solid var(--border)" }}
+                  >
+                    <p
+                      className="text-[11px] font-semibold uppercase tracking-wide"
+                      style={{ color: "var(--muted)" }}
+                    >
+                      Cómo reconocerlo
+                    </p>
+                    <p className="mt-1 whitespace-pre-wrap text-sm">{s.pista}</p>
+                  </div>
+                )}
 
                 <p className="mt-3 text-xs" style={{ color: "var(--muted)" }}>
                   Mételo como <b>Evaluador</b> en tu app de Meta, y después dale al botón de abajo.
@@ -195,7 +215,7 @@ export default function AdminTesters({ inicial }: { inicial: Solicitud[] }) {
                   </span>
                 )}
                 <span className="ml-auto text-xs" style={{ color: "var(--muted)" }}>
-                  {s.correo}
+                  {s.correo_aviso ?? s.correo}
                 </span>
               </li>
             ))}

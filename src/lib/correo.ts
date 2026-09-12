@@ -58,6 +58,19 @@ export async function mandarCorreo(c: Correo): Promise<{ ok: boolean; motivo?: s
   }
 }
 
+/**
+ * Donde metes tu a la gente como Tester, en TU app.
+ *
+ * Sale de META_APP_ID, el App ID de la app con la que das acceso. Si no
+ * esta puesto, se manda a la lista de apps y que la busque a mano.
+ */
+export function enlaceRoles(): string {
+  const appId = secreto("META_APP_ID");
+  return appId
+    ? `https://developers.facebook.com/apps/${appId}/roles/roles/`
+    : "https://developers.facebook.com/apps/";
+}
+
 /** Donde acepta el cliente la invitación de Tester. No es un correo: está
  *  escondido en la configuración de Facebook y nadie lo encuentra solo. */
 export const ENLACE_INVITACION = "https://www.facebook.com/settings?tab=developer";

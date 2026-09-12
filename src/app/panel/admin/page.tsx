@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { currentUser } from "@/lib/supabase/server";
 import { esAdmin } from "@/lib/admin";
-import { ENLACE_INVITACION } from "@/lib/correo";
+import { ENLACE_INVITACION, enlaceRoles } from "@/lib/correo";
 import AdminTesters from "@/components/AdminTesters";
 import { listarSolicitudes } from "@/lib/testers";
 
@@ -45,6 +45,15 @@ export default async function AdminPage() {
             Vuelve aquí y dale a <b>Ya lo invité</b>. Ahí se le avisa a esa persona.
           </li>
         </ol>
+        <a
+          href={enlaceRoles()}
+          target="_blank"
+          rel="noreferrer"
+          className="btn btn-primary mt-4"
+        >
+          Abrir los Roles de mi app ↗
+        </a>
+
         <p className="mt-3 text-xs" style={{ color: "var(--muted)" }}>
           Ellos aceptan en{" "}
           <a href={ENLACE_INVITACION} target="_blank" rel="noreferrer" className="underline">

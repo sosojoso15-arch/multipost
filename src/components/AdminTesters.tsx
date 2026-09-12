@@ -151,7 +151,7 @@ export default function AdminTesters({ inicial }: { inicial: Solicitud[] }) {
                 </div>
 
                 <p className="mt-3 text-xs" style={{ color: "var(--muted)" }}>
-                  Mételo como <b>Tester</b> en tu app de Meta, y después dale a Listo.
+                  Mételo como <b>Evaluador</b> en tu app de Meta, y después dale al botón de abajo.
                 </p>
 
                 <div className="mt-3 flex flex-wrap gap-2">

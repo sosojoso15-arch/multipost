@@ -28,7 +28,7 @@ export default async function AdminPage() {
     <main className="shell-lectura py-8 sm:py-10">
       <h1 className="text-2xl font-bold tracking-tight">Solicitudes de acceso</h1>
       <p className="mt-1 text-sm" style={{ color: "var(--muted)" }}>
-        Gente esperando a que la metas como Tester de tu app de Meta.
+        Gente esperando a que la metas como Evaluador en tu app de Meta.
       </p>
 
       <div className="card mt-5 text-sm">
@@ -38,7 +38,12 @@ export default async function AdminPage() {
             Copia el usuario de Facebook de la solicitud.
           </li>
           <li>
-            En tu app de Meta: <b>Roles de la app → Roles → Agregar personas → Tester</b>.
+            En tu app de Meta: <b>Roles de la app → Agregar personas</b>, y marca{" "}
+            <b>Evaluador</b>.
+            <span className="block text-xs">
+              Meta lo llama <i>Evaluador</i> en español, no <i>Tester</i>. Es el que dice
+              &ldquo;puede probar todos los permisos&rdquo;.
+            </span>
           </li>
           <li>Pega el usuario y envía la invitación.</li>
           <li>

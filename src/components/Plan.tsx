@@ -8,6 +8,9 @@ type Props = {
   limite: number;
   /** Cuando se acaba la prueba, o hasta cuando vale el plan pagado. */
   hasta: string | null;
+  /** Lo que cuesta hoy. Viene del servidor: escrito a mano se desincroniza
+   *  del cobro real, y entonces el botón promete un precio y Wompi cobra otro. */
+  precioUsd: number;
   vencido: boolean;
 };
 
@@ -21,7 +24,7 @@ function diasHasta(iso: string | null): number | null {
   return Math.max(0, Math.ceil(ms / 86400000));
 }
 
-export default function Plan({ plan, usados, limite, hasta, vencido }: Props) {
+export default function Plan({ plan, usados, limite, hasta, vencido, precioUsd }: Props) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [precio, setPrecio] = useState<{ pesos?: string; trm?: number } | null>(null);
@@ -52,6 +55,14 @@ export default function Plan({ plan, usados, limite, hasta, vencido }: Props) {
     try {
       const r = await fetch("/api/pago/checkout", { method: "POST" });
       const j = (await r.json()) as { url?: string; error?: string; texto?: string };
+
+      // La sesión se vence sola al rato. Decir "entra a tu cuenta" a alguien
+      // que SÍ está dentro no se entiende: mejor decirle que recargue.
+      if (r.status === 401) {
+        setError("Tu sesión venció. Recarga la página y vuelve a intentarlo.");
+        setBusy(false);
+        return;
+      }
       if (!r.ok || !j.url) throw new Error(j.error ?? "No se pudo iniciar el pago");
       // Al checkout de Wompi. No se abre en pestana nueva a proposito: en el
       // movil las pestanas nuevas se pierden y la gente no vuelve.
@@ -80,8 +91,10 @@ export default function Plan({ plan, usados, limite, hasta, vencido }: Props) {
           ? "Se renueva mañana."
           : `Te quedan ${dias} días.`;
   } else {
-    titulo = "Todavía no tienes plan";
-    detalle = "Paga el mes y ya puedes conectar tus páginas y publicar.";
+    /* La pantalla que lo contiene ya dice "Todavía no tienes plan" arriba.
+       Repetirlo aquí se ve a dos renglones de distancia y sobra. */
+    titulo = "Plan Pro";
+    detalle = "Todas tus páginas, publicaciones programadas y primer comentario.";
     urge = true;
   }
 
@@ -106,7 +119,9 @@ export default function Plan({ plan, usados, limite, hasta, vencido }: Props) {
         {(vencido || plan === "free") && (
           <div className="flex shrink-0 flex-col items-stretch gap-1 sm:items-end">
             <button className="btn btn-primary" onClick={pagar} disabled={busy}>
-              {busy ? "Abriendo el pago…" : vencido ? "Renovar — 45 USD" : "Pagar el mes — 45 USD"}
+              {busy
+                ? "Abriendo el pago…"
+                : `${vencido ? "Renovar" : "Pagar el mes"} — ${precioUsd} USD`}
             </button>
             <p className="text-center text-xs sm:text-right" style={{ color: "var(--muted)" }}>
               {precio?.pesos ? (
@@ -124,7 +139,21 @@ export default function Plan({ plan, usados, limite, hasta, vencido }: Props) {
         )}
       </div>
 
-      {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
+      {error && (
+        <div className="mt-3">
+          <p className="text-sm" style={{ color: "#c2352f" }} role="alert">
+            {error}
+          </p>
+          {error.startsWith("Tu sesión") && (
+            <button
+              className="btn btn-ghost mt-2 !px-3 !py-1.5 text-xs"
+              onClick={() => window.location.reload()}
+            >
+              Recargar
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }

@@ -3,6 +3,7 @@ import { supabaseServer, currentUser } from "@/lib/supabase/server";
 import Composer from "@/components/Composer";
 import Plan from "@/components/Plan";
 import { haPagado, limitePosts, planVigente } from "@/lib/plans";
+import { precioUsd } from "@/lib/precio";
 
 export default async function PanelPage() {
   const user = await currentUser();
@@ -50,6 +51,7 @@ export default async function PanelPage() {
             usados={profile?.posts_used ?? 0}
             limite={limitePosts(planVigente(profile))}
             hasta={profile?.plan_expires_at ?? null}
+            precioUsd={precioUsd()}
             vencido={yaPago}
           />
         </div>
@@ -94,6 +96,7 @@ export default async function PanelPage() {
           usados={profile?.posts_used ?? 0}
           limite={limitePosts(vigente)}
           hasta={profile?.plan_expires_at ?? null}
+          precioUsd={precioUsd()}
           vencido={vencido}
         />
       </div>

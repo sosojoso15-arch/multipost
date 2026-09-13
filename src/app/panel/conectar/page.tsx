@@ -4,6 +4,7 @@ import { redirectUri } from "@/lib/metaOauth";
 import PedirAcceso from "@/components/PedirAcceso";
 import Plan from "@/components/Plan";
 import { haPagado, limitePosts, planVigente } from "@/lib/plans";
+import { precioUsd } from "@/lib/precio";
 import Link from "next/link";
 
 export default async function ConectarPage() {
@@ -47,12 +48,13 @@ export default async function ConectarPage() {
           Cuando esté pagado, conectamos tus páginas y empiezas a publicar.
         </p>
 
-        <div className="mt-6">
+        <div className="mt-5">
           <Plan
             plan={planVigente(perfil)}
             usados={perfil?.posts_used ?? 0}
             limite={limitePosts(planVigente(perfil))}
             hasta={perfil?.plan_expires_at ?? null}
+            precioUsd={precioUsd()}
             vencido={(perfil?.plan ?? "free") !== "free"}
           />
         </div>

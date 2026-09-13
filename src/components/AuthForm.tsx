@@ -12,11 +12,35 @@ export default function AuthForm({ mode }: { mode: "login" | "registro" }) {
   const [password, setPassword] = useState("");
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
   const [busy, setBusy] = useState(false);
+  const [reenviando, setReenviando] = useState(false);
 
   const esRegistro = mode === "registro";
 
   // Si el enlace del correo falló, /auth/callback nos manda el motivo aquí.
   const errorDelEnlace = params.get("error");
+  const puedeReenviar = params.get("reenviar") === "1";
+
+  /** Otro correo de confirmación. Sirve cuando el enlace venció o se abrió
+   *  en otro aparato, que es lo que pasa casi siempre. */
+  async function reenviar() {
+    if (!email.trim()) {
+      setMsg({ text: "Escribe tu correo arriba para mandarte otro enlace.", ok: false });
+      return;
+    }
+    setReenviando(true);
+    setMsg(null);
+    const { error } = await supabaseBrowser().auth.resend({
+      type: "signup",
+      email: email.trim(),
+      options: { emailRedirectTo: `${location.origin}/auth/callback` },
+    });
+    setMsg(
+      error
+        ? { text: error.message, ok: false }
+        : { text: "Listo, te mandamos otro correo. Ábrelo en ESTE mismo aparato.", ok: true },
+    );
+    setReenviando(false);
+  }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -74,6 +98,21 @@ export default function AuthForm({ mode }: { mode: "login" | "registro" }) {
         >
           <p className="font-semibold">El enlace del correo no sirvió</p>
           <p className="mt-1">{errorDelEnlace}</p>
+          {puedeReenviar && (
+            <>
+              <p className="mt-2 text-xs">
+                Escribe tu correo aquí abajo y pide otro enlace.
+              </p>
+              <button
+                type="button"
+                className="btn btn-ghost mt-2 !px-3 !py-1.5 text-xs"
+                onClick={reenviar}
+                disabled={reenviando}
+              >
+                {reenviando ? "Enviando…" : "Mandarme otro correo"}
+              </button>
+            </>
+          )}
         </div>
       )}
 

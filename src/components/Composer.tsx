@@ -167,6 +167,46 @@ export default function Composer({ cuentas }: { cuentas: CuentaFila[] }) {
           />
         </div>
 
+        {/* El botón va aquí, pegado a los campos que se acaban de llenar.
+            Antes vivía en la tarjeta de Destinos: en el computador se veía
+            bien porque esa columna se queda pegada al bajar, pero en el
+            teléfono las columnas se apilan y el botón terminaba al final de
+            todo, después de la lista de cuentas. Había que bajar a buscarlo.
+
+            Los avisos van con él y no al final: de nada sirve decir
+            "Instagram no acepta solo texto" a un metro del sitio donde se
+            aprieta. */}
+        <div className="space-y-2 border-t pt-4" style={{ borderColor: "var(--border)" }}>
+          {igSinMedia && (
+            <p className="text-sm text-amber-600">
+              Instagram no acepta publicaciones de solo texto. Agrega una imagen o quita las
+              cuentas de Instagram.
+            </p>
+          )}
+          {error && <p className="text-sm text-red-600">{error}</p>}
+          {aviso && <p className="text-sm text-green-600">{aviso}</p>}
+
+          <button
+            className="btn btn-primary w-full"
+            onClick={enviar}
+            disabled={busy || vacio || sel.size === 0 || igSinMedia}
+          >
+            {busy
+              ? "Publicando..."
+              : cuando
+                ? `Programar en ${sel.size} cuenta${sel.size === 1 ? "" : "s"}`
+                : `Publicar en ${sel.size} cuenta${sel.size === 1 ? "" : "s"}`}
+          </button>
+
+          {/* Por qué está apagado. Un botón gris sin explicación se lee como
+              "esto está roto". */}
+          {!busy && (vacio || sel.size === 0) && (
+            <p className="text-center text-xs" style={{ color: "var(--muted)" }}>
+              {vacio ? "Escribe algo o adjunta una imagen." : "Marca al menos una cuenta."}
+            </p>
+          )}
+        </div>
+
         {resultados && (
           <ul className="space-y-1.5 text-sm">
             {resultados.map((r, i) => (
@@ -184,10 +224,14 @@ export default function Composer({ cuentas }: { cuentas: CuentaFila[] }) {
         )}
       </div>
 
-      {/* ---------- destinos y publicar ----------
-           Se queda pegado arriba al bajar: en una publicación larga el botón
-           se iba de la pantalla y había que subir a buscarlo. El `top` deja
-           sitio a la barra de arriba, que también es pegajosa. */}
+      {/* ---------- destinos ----------
+           En el computador se queda pegada al bajar, para poder marcar y
+           desmarcar cuentas mientras se escribe. El `top` deja sitio a la
+           barra de arriba, que también es pegajosa.
+
+           En el teléfono va DEBAJO del botón: primero escribes y publicas,
+           y solo bajas aquí si quieres cambiar los destinos —que casi
+           siempre son todos. */}
       <div className="card h-fit lg:sticky lg:top-[72px]">
         <div className="flex items-center justify-between">
           <p className="font-semibold">Destinos</p>
@@ -233,39 +277,6 @@ export default function Composer({ cuentas }: { cuentas: CuentaFila[] }) {
           ))}
         </ul>
 
-        {/* Los avisos van pegados al botón, no al final de la otra columna:
-            de nada sirve decir "Instagram no acepta solo texto" a un metro
-            del sitio donde se aprieta. */}
-        <div className="mt-4 space-y-2 border-t pt-4" style={{ borderColor: "var(--border)" }}>
-          {igSinMedia && (
-            <p className="text-sm text-amber-600">
-              Instagram no acepta publicaciones de solo texto. Agrega una imagen o quita las
-              cuentas de Instagram.
-            </p>
-          )}
-          {error && <p className="text-sm text-red-600">{error}</p>}
-          {aviso && <p className="text-sm text-green-600">{aviso}</p>}
-
-          <button
-            className="btn btn-primary w-full"
-            onClick={enviar}
-            disabled={busy || vacio || sel.size === 0 || igSinMedia}
-          >
-            {busy
-              ? "Publicando..."
-              : cuando
-                ? `Programar en ${sel.size} cuenta${sel.size === 1 ? "" : "s"}`
-                : `Publicar en ${sel.size} cuenta${sel.size === 1 ? "" : "s"}`}
-          </button>
-
-          {/* Por qué está apagado. Un botón gris sin explicación se lee como
-              "esto está roto". */}
-          {!busy && (vacio || sel.size === 0) && (
-            <p className="text-center text-xs" style={{ color: "var(--muted)" }}>
-              {vacio ? "Escribe algo o adjunta una imagen." : "Marca al menos una cuenta."}
-            </p>
-          )}
-        </div>
       </div>
     </div>
   );

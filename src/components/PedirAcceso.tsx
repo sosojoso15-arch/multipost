@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { pedirPermisoFacebook } from "@/lib/sdkFacebook";
+import { pedirPermisoFacebook, precargarSdk } from "@/lib/sdkFacebook";
 import { useRouter } from "next/navigation";
 
 type Estado = "ninguna" | "pendiente" | "listo" | "rechazado";
@@ -85,6 +85,17 @@ export default function PedirAcceso({
     return () => window.removeEventListener("message", onMensaje);
   }, [onMensaje]);
 
+  /* El SDK se carga AL ABRIR la pantalla, no al hacer clic.
+     Si se carga dentro del clic, esa espera hace que el navegador ya no
+     considere que la ventana de Facebook la pidio el usuario, y la bloquea:
+     el boton se queda esperando para siempre. En el telefono pasa siempre. */
+  useEffect(() => {
+    if (!appId || estado !== "listo") return;
+    precargarSdk(appId).catch(() => {
+      /* Si no carga, el boton lo dira al intentar. No molestar antes. */
+    });
+  }, [appId, estado]);
+
   /**
    * Abre la pantalla de permisos de Facebook. Usa NUESTRA app: el cliente del
    * camino corto no tiene una suya.
@@ -99,14 +110,23 @@ export default function PedirAcceso({
    * Es lo unico que sirve en el telefono: la vuelta por facebook.com se la
    * traga la app de Facebook y el cliente nunca regresa.
    */
-  async function conectarConSdk() {
+  function conectarConSdk() {
     setError(null);
     setConectadas(null);
     setBusy(true);
 
-    try {
-      const token = await pedirPermisoFacebook({ appId: appId!, configId });
+    // Se llama a Facebook DE UNA, sin esperar nada antes: es lo que mantiene
+    // viva la cadena del toque. Lo demas ya puede ser asincrono.
+    pedirPermisoFacebook({ configId }).then(mandarToken).catch(fallo);
+  }
 
+  function fallo(e: unknown) {
+    setError(e instanceof Error ? e.message : "No se pudo conectar");
+    setBusy(false);
+  }
+
+  async function mandarToken(token: string) {
+    try {
       const r = await fetch("/api/meta/sdk", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -118,7 +138,7 @@ export default function PedirAcceso({
       setConectadas(j.cuentas ?? 0);
       router.refresh();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "No se pudo conectar");
+      fallo(e);
     } finally {
       setBusy(false);
     }

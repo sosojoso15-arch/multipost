@@ -43,7 +43,19 @@ const PERMISOS = [
 
 let cargando: Promise<void> | null = null;
 
-/** Carga el SDK una sola vez, aunque se llame varias veces. */
+/**
+ * Carga el SDK una sola vez, aunque se llame varias veces.
+ *
+ * Hay que llamarlo AL ABRIR LA PANTALLA, no al hacer clic. Si se carga
+ * dentro del clic, para cuando el SDK esta listo el navegador ya no
+ * considera que la ventana de Facebook la pidio el usuario, y la bloquea:
+ * el boton se queda esperando una respuesta que no llega nunca. En el
+ * telefono pasa siempre.
+ */
+export function precargarSdk(appId: string, version = "v23.0"): Promise<void> {
+  return cargar(appId, version);
+}
+
 function cargar(appId: string, version: string): Promise<void> {
   if (window.FB) return Promise.resolve();
   if (cargando) return cargando;
@@ -75,24 +87,46 @@ function cargar(appId: string, version: string): Promise<void> {
  * `configId` es de las apps de tipo Negocios, que usan una configuracion en
  * vez de una lista de permisos suelta.
  */
-export async function pedirPermisoFacebook(opts: {
-  appId: string;
+export function pedirPermisoFacebook(opts: {
   configId: string | null;
-  version?: string;
 }): Promise<string> {
-  await cargar(opts.appId, opts.version ?? "v23.0");
+  /* Nada de `await` antes de FB.login: cualquier espera aqui hace que el
+     navegador bloquee la ventana por no venir del toque. El SDK ya tiene que
+     estar cargado desde que se abrio la pantalla. */
+  if (!window.FB) {
+    return Promise.reject(
+      new Error("El conector de Facebook no terminó de cargar. Espera un segundo y reintenta."),
+    );
+  }
 
   return new Promise<string>((resolve, reject) => {
+    // Si Facebook no contesta, no dejar el boton girando para siempre.
+    const plazo = setTimeout(() => {
+      reject(
+        new Error(
+          "Facebook no respondió. Puede que tu navegador haya bloqueado la ventana: " +
+            "permite las ventanas emergentes para este sitio y reintenta.",
+        ),
+      );
+    }, 90_000);
+
+    const responder = (f: () => void) => {
+      clearTimeout(plazo);
+      f();
+    };
+
     window.FB!.login(
       (r) => {
         const token = r?.authResponse?.accessToken;
-        if (token) return resolve(token);
+        if (token) return responder(() => resolve(token));
 
-        reject(
-          new Error(
-            r?.status === "unknown"
-              ? "Cancelaste el permiso, o Facebook cerró la ventana."
-              : "Facebook no dio el permiso. Revisa que hayas aceptado la invitación.",
+        responder(() =>
+          reject(
+            new Error(
+              r?.status === "unknown"
+                ? "Cancelaste el permiso, o Facebook cerró la ventana."
+                : "Facebook no dio el permiso. Revisa que hayas aceptado la invitación.",
+            ),
           ),
         );
       },

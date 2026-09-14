@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 type Estado = "ninguna" | "pendiente" | "listo" | "rechazado";
@@ -53,6 +53,65 @@ export default function PedirAcceso({
   const [esDev, setEsDev] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [conectadas, setConectadas] = useState<number | null>(null);
+
+  /* Lo que responde el popup de Facebook al terminar. */
+  const onMensaje = useCallback(
+    (ev: MessageEvent) => {
+      if (ev.origin !== window.location.origin) return;
+      const d = ev.data as { ok?: boolean; count?: number; error?: string };
+      if (typeof d?.ok !== "boolean") return;
+
+      setBusy(false);
+      if (d.ok) {
+        setConectadas(d.count ?? 0);
+        setError(null);
+        router.refresh();
+      } else {
+        setError(d.error ?? "No se pudo conectar");
+      }
+    },
+    [router],
+  );
+
+  useEffect(() => {
+    window.addEventListener("message", onMensaje);
+    return () => window.removeEventListener("message", onMensaje);
+  }, [onMensaje]);
+
+  /** Abre la ventana de permisos de Facebook. Usa NUESTRA app: el cliente del
+   *  camino corto no tiene una suya. */
+  function conectar() {
+    setError(null);
+    setConectadas(null);
+    setBusy(true);
+
+    const w = window.open(
+      "/api/meta/start",
+      "conectar_meta",
+      "width=620,height=780,menubar=no,toolbar=no",
+    );
+
+    if (!w) {
+      setBusy(false);
+      setError("Tu navegador bloqueó la ventana. Permite las ventanas emergentes y reintenta.");
+      return;
+    }
+
+    const timer = window.setInterval(() => {
+      if (!w.closed) return;
+      window.clearInterval(timer);
+      setBusy((seguia) => {
+        if (seguia) {
+          setError(
+            "Cerraste la ventana sin terminar. Si Facebook no te dejó entrar, revisa que hayas " +
+              "aceptado la invitación.",
+          );
+        }
+        return false;
+      });
+    }, 700);
+  }
 
   /* Los tres primeros son obligatorios: sin nombre se puede invitar a la
      cuenta equivocada, y sin correo el aviso no llega a ninguna parte. */
@@ -99,17 +158,35 @@ export default function PedirAcceso({
           <li>
             Busca la invitación de <b>Multi-Post</b> y acéptala.
           </li>
-          <li>Vuelve aquí y conecta tus páginas.</li>
+          <li>Vuelve aquí y dale a conectar.</li>
         </ol>
 
         <div className="mt-4 flex flex-wrap gap-2">
-          <a href={ENLACE} target="_blank" rel="noreferrer" className="btn btn-primary">
+          <a href={ENLACE} target="_blank" rel="noreferrer" className="btn btn-ghost">
             Ir a aceptar la invitación ↗
           </a>
-          <button className="btn btn-ghost" onClick={() => router.refresh()}>
-            Ya la acepté
+          <button
+            className="btn btn-primary"
+            onClick={conectar}
+            disabled={busy}
+            style={{ background: "#1877f2" }}
+          >
+            {busy ? "Esperando a Facebook…" : "Ya la acepté — conectar"}
           </button>
         </div>
+
+        {conectadas !== null && (
+          <p className="mt-3 text-sm font-semibold" style={{ color: "#10804a" }}>
+            Listo: {conectadas} cuenta{conectadas === 1 ? "" : "s"} conectada
+            {conectadas === 1 ? "" : "s"}. Ya puedes publicar.
+          </p>
+        )}
+
+        {error && (
+          <p className="mt-3 text-sm" style={{ color: "#c2352f" }} role="alert">
+            {error}
+          </p>
+        )}
 
         <p className="mt-3 text-xs" style={{ color: "var(--muted)" }}>
           Esa invitación <b>no llega por correo</b>: vive escondida en la configuración de Facebook.

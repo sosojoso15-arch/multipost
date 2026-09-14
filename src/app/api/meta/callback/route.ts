@@ -9,6 +9,7 @@ import {
   MetaError,
 } from "@/lib/meta";
 import { STATE_COOKIE, redirectUri, popupResponse } from "@/lib/metaOauth";
+import { appNuestra } from "@/lib/appNuestra";
 
 export const maxDuration = 120;
 
@@ -52,30 +53,33 @@ export async function GET(req: NextRequest) {
     .limit(1)
     .maybeSingle();
 
-  if (!app?.app_secret_enc) {
-    return popupResponse({ ok: false, error: "Falta el App Secret de tu app." });
+  const propia = app?.app_secret_enc ? app : null;
+  const nuestra = propia ? null : appNuestra();
+
+  if (!propia && !nuestra) {
+    return popupResponse({ ok: false, error: "No hay con qué conectarte. Avísanos." });
   }
 
+  /* De quien es la app con la que se esta conectando. Todo lo de abajo usa
+     esto, sin importar por cual de los dos caminos llego. */
+  const appId = propia ? propia.app_id : nuestra!.appId;
+  const graphVer = propia ? propia.graph_ver : nuestra!.graphVer;
+
   try {
-    const secret = decrypt(app.app_secret_enc);
+    const secret = propia ? decrypt(propia.app_secret_enc!) : nuestra!.appSecret;
 
     const corto = await exchangeCodeForToken({
-      ver: app.graph_ver,
-      appId: app.app_id,
+      ver: graphVer,
+      appId,
       appSecret: secret,
       redirectUri: redirectUri(),
       code,
     });
 
     // Token de 60 dias. Los tokens de pagina que salgan de aqui no caducan.
-    const { token: largo } = await exchangeLongLivedToken(
-      app.graph_ver,
-      app.app_id,
-      secret,
-      corto,
-    );
+    const { token: largo } = await exchangeLongLivedToken(graphVer, appId, secret, corto);
 
-    const found = await discoverAccounts(app.graph_ver, largo);
+    const found = await discoverAccounts(graphVer, largo);
 
     if (found.length === 0) {
       return popupResponse({
@@ -85,10 +89,41 @@ export async function GET(req: NextRequest) {
       });
     }
 
+    /* `accounts` cuelga de una fila de `meta_apps`, que es de donde sale la
+       version de la API al publicar. Quien llego por el camino corto no tiene
+       una: se le crea apuntando a NUESTRA app, sin guardar el secreto —ese es
+       nuestro y vive en el Worker, no en la base de cada cliente. */
+    let metaAppId = propia?.id;
+
+    if (!metaAppId) {
+      const { data: creada, error: errApp } = await sb
+        .from("meta_apps")
+        .upsert(
+          {
+            user_id: user.id,
+            app_id: appId,
+            graph_ver: graphVer,
+            config_id: nuestra!.configId,
+            verified_at: new Date().toISOString(),
+          },
+          { onConflict: "user_id,app_id" },
+        )
+        .select("id")
+        .single();
+
+      if (errApp || !creada) {
+        return popupResponse({
+          ok: false,
+          error: errApp?.message ?? "No se pudo dejar lista tu conexión.",
+        });
+      }
+      metaAppId = creada.id;
+    }
+
     const { error } = await sb.from("accounts").upsert(
       found.map((a) => ({
         user_id: user.id,
-        meta_app_id: app.id,
+        meta_app_id: metaAppId!,
         platform: a.platform,
         external_id: a.externalId,
         name: a.name,
@@ -104,7 +139,10 @@ export async function GET(req: NextRequest) {
 
     if (error) return popupResponse({ ok: false, error: error.message });
 
-    await sb.from("meta_apps").update({ verified_at: new Date().toISOString() }).eq("id", app.id);
+    await sb
+      .from("meta_apps")
+      .update({ verified_at: new Date().toISOString() })
+      .eq("id", metaAppId!);
 
     return popupResponse({ ok: true, count: found.length });
   } catch (e) {

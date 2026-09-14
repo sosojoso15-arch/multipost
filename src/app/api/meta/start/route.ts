@@ -5,6 +5,7 @@ import { supabaseServer } from "@/lib/supabase/server";
 import { authorizeUrl } from "@/lib/meta";
 import { STATE_COOKIE, redirectUri, popupResponse } from "@/lib/metaOauth";
 import { haPagado } from "@/lib/plans";
+import { appNuestra, faltaDeAppNuestra } from "@/lib/appNuestra";
 
 /**
  * Manda al cliente a la pantalla de permisos de Facebook.
@@ -35,11 +36,23 @@ export async function GET() {
     .limit(1)
     .maybeSingle();
 
-  if (!app) {
-    return popupResponse({ ok: false, error: "Primero guarda tu App ID." });
-  }
-  if (!app.app_secret_enc) {
-    return popupResponse({ ok: false, error: "Falta el App Secret de tu app." });
+  /* Dos caminos:
+       - Trajo SU app: se conecta con la de el.
+       - No trajo nada: es del camino corto, lo metimos como Evaluador de
+         NUESTRA app, y se conecta con esa.
+     El segundo es el que no existia, y por eso "Ya la acepté" no llevaba
+     a ninguna parte. */
+  const propia = app?.app_secret_enc ? app : null;
+  const nuestra = propia ? null : appNuestra();
+
+  if (!propia && !nuestra) {
+    const falta = faltaDeAppNuestra();
+    return popupResponse({
+      ok: false,
+      error: falta.length
+        ? `Falta configurar nuestra app de Meta en el servidor (${falta.join(", ")}). Avísanos.`
+        : "Primero guarda tu App ID, o pídenos acceso.",
+    });
   }
 
   const state = crypto.randomBytes(24).toString("hex");
@@ -54,11 +67,11 @@ export async function GET() {
 
   return NextResponse.redirect(
     authorizeUrl({
-      ver: app.graph_ver,
-      appId: app.app_id,
+      ver: propia ? propia.graph_ver : nuestra!.graphVer,
+      appId: propia ? propia.app_id : nuestra!.appId,
       redirectUri: redirectUri(),
       state,
-      configId: app.config_id,
+      configId: propia ? propia.config_id : nuestra!.configId,
     }),
   );
 }

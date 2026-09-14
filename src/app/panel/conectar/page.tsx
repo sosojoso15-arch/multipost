@@ -5,6 +5,7 @@ import PedirAcceso from "@/components/PedirAcceso";
 import Plan from "@/components/Plan";
 import { haPagado, limitePosts, planVigente } from "@/lib/plans";
 import { precioUsd } from "@/lib/precio";
+import { appNuestra } from "@/lib/appNuestra";
 import Link from "next/link";
 
 export default async function ConectarPage({
@@ -154,6 +155,8 @@ export default async function ConectarPage({
           mitad se pierde creando una app que no necesita. */}
       <div className="mt-6">
         <PedirAcceso
+          appId={appNuestra()?.appId ?? null}
+          configId={appNuestra()?.configId ?? null}
           estado={(solicitud?.estado as "pendiente" | "listo" | "rechazado") ?? "ninguna"}
           refGuardada={solicitud?.facebook_ref ?? null}
           nombreGuardado={solicitud?.nombre_fb ?? null}

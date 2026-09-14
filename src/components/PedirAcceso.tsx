@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { pedirPermisoFacebook } from "@/lib/sdkFacebook";
 import { useRouter } from "next/navigation";
 
 type Estado = "ninguna" | "pendiente" | "listo" | "rechazado";
@@ -31,6 +32,8 @@ const ENLACE_DEV = "https://developers.facebook.com/";
  * nuestro lado, pero para el cliente es escribir una linea y esperar.
  */
 export default function PedirAcceso({
+  appId,
+  configId,
   estado,
   refGuardada,
   nombreGuardado,
@@ -38,6 +41,9 @@ export default function PedirAcceso({
   correoGuardado,
   nota,
 }: {
+  /** NUESTRA app. Son publicos los dos: el navegador los necesita. */
+  appId: string | null;
+  configId: string | null;
   estado: Estado;
   refGuardada: string | null;
   nombreGuardado: string | null;
@@ -87,7 +93,39 @@ export default function PedirAcceso({
    * razones: los moviles pierden las ventanas nuevas, y con ventana aparte el
    * enlace se lo traga la app de Facebook y el flujo muere sin volver.
    */
-  function conectar() {
+  /**
+   * Conecta sin salir de la pagina, con el SDK.
+   *
+   * Es lo unico que sirve en el telefono: la vuelta por facebook.com se la
+   * traga la app de Facebook y el cliente nunca regresa.
+   */
+  async function conectarConSdk() {
+    setError(null);
+    setConectadas(null);
+    setBusy(true);
+
+    try {
+      const token = await pedirPermisoFacebook({ appId: appId!, configId });
+
+      const r = await fetch("/api/meta/sdk", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token }),
+      });
+      const j = (await r.json()) as { cuentas?: number; error?: string };
+      if (!r.ok) throw new Error(j.error ?? "No se pudo conectar");
+
+      setConectadas(j.cuentas ?? 0);
+      router.refresh();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "No se pudo conectar");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  /** Respaldo: la vuelta clasica por Facebook. En el computador va bien. */
+  function conectarPorOauth() {
     setError(null);
     setConectadas(null);
     setBusy(true);
@@ -187,13 +225,21 @@ export default function PedirAcceso({
           </a>
           <button
             className="btn btn-primary"
-            onClick={conectar}
+            onClick={appId ? conectarConSdk : conectarPorOauth}
             disabled={busy}
             style={{ background: "#1877f2" }}
           >
             {busy ? "Esperando a Facebook…" : "Ya la acepté — conectar"}
           </button>
         </div>
+
+        <p className="mt-2 text-xs" style={{ color: "var(--muted)" }}>
+          ¿No abre nada, o se cerró sin hacer nada?{" "}
+          <button type="button" className="underline" onClick={conectarPorOauth} disabled={busy}>
+            Prueba por el otro camino
+          </button>
+          .
+        </p>
 
         {conectadas !== null && (
           <p className="mt-3 text-sm font-semibold" style={{ color: "#10804a" }}>

@@ -7,7 +7,14 @@ import { haPagado, limitePosts, planVigente } from "@/lib/plans";
 import { precioUsd } from "@/lib/precio";
 import Link from "next/link";
 
-export default async function ConectarPage() {
+export default async function ConectarPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ conectadas?: string; fallo?: string }>;
+}) {
+  /* Cuando la conexion va en la misma pestana —en el telefono— el resultado
+     vuelve por la direccion, no por un mensaje entre ventanas. */
+  const sp = await searchParams;
   const user = await currentUser();
   const sb = await supabaseServer();
 
@@ -84,6 +91,30 @@ export default async function ConectarPage() {
       <p className="mt-1 text-sm" style={{ color: "var(--muted)" }}>
         Hay dos caminos. El corto es que nosotros te conectemos.
       </p>
+
+      {sp.conectadas && (
+        <div className="card mt-5" style={{ borderColor: "rgba(16,128,74,.45)" }}>
+          <p className="font-semibold" style={{ color: "#10804a" }}>
+            Listo: {sp.conectadas} cuenta{sp.conectadas === "1" ? "" : "s"} conectada
+            {sp.conectadas === "1" ? "" : "s"}
+          </p>
+          <p className="mt-1 text-sm" style={{ color: "var(--muted)" }}>
+            Ya puedes publicar en todas a la vez.
+          </p>
+          <Link href="/panel" className="btn btn-primary mt-3">
+            Ir a publicar
+          </Link>
+        </div>
+      )}
+
+      {sp.fallo && (
+        <div className="card mt-5 text-sm" style={{ borderColor: "#e0b4b4" }} role="alert">
+          <p className="font-semibold">No se pudo conectar</p>
+          <p className="mt-1" style={{ color: "var(--muted)" }}>
+            {sp.fallo}
+          </p>
+        </div>
+      )}
 
       {cuentas && cuentas.length > 0 && (
         <div className="card mt-6">

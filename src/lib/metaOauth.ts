@@ -15,6 +15,10 @@ export function popupResponse(payload: Record<string, unknown>) {
   const json = JSON.stringify(payload).replace(/</g, "\u003c");
   const ok = payload.ok === true;
 
+  const destino = ok
+    ? `/panel/conectar?conectadas=${Number(payload.count ?? 0)}`
+    : `/panel/conectar?fallo=${encodeURIComponent(String(payload.error ?? "No se pudo conectar"))}`;
+
   const html = `<!doctype html>
 <meta charset="utf-8">
 <title>Conectando…</title>
@@ -30,8 +34,24 @@ export function popupResponse(payload: Record<string, unknown>) {
   <p>${ok ? "Puedes cerrar esta ventana." : String(payload.error ?? "")}</p>
 </div>
 <script>
-  try { window.opener && window.opener.postMessage(${json}, window.location.origin); } catch (e) {}
-  ${ok ? "setTimeout(function(){ window.close(); }, 900);" : ""}
+  /* Dos formas de volver, segun como se abrio:
+
+     - En ventana aparte (computador): se le avisa a la ventana que la abrio
+       y esta se cierra sola.
+     - En la MISMA pestana (telefono): no hay a quien avisarle, asi que se
+       vuelve al panel con el resultado en la direccion. Esto hace falta
+       porque en el movil las ventanas aparte se pierden, y ademas la app de
+       Facebook se traga los enlaces a facebook.com. */
+  try {
+    if (window.opener && !window.opener.closed) {
+      window.opener.postMessage(${json}, window.location.origin);
+      ${ok ? "setTimeout(function(){ window.close(); }, 900);" : ""}
+    } else {
+      window.location.replace(${JSON.stringify(destino)});
+    }
+  } catch (e) {
+    window.location.replace(${JSON.stringify(destino)});
+  }
 </script>`;
 
   return new Response(html, {

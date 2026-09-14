@@ -79,12 +79,31 @@ export default function PedirAcceso({
     return () => window.removeEventListener("message", onMensaje);
   }, [onMensaje]);
 
-  /** Abre la ventana de permisos de Facebook. Usa NUESTRA app: el cliente del
-   *  camino corto no tiene una suya. */
+  /**
+   * Abre la pantalla de permisos de Facebook. Usa NUESTRA app: el cliente del
+   * camino corto no tiene una suya.
+   *
+   * En el telefono va en la MISMA pestana y no en una ventana aparte. Dos
+   * razones: los moviles pierden las ventanas nuevas, y con ventana aparte el
+   * enlace se lo traga la app de Facebook y el flujo muere sin volver.
+   */
   function conectar() {
     setError(null);
     setConectadas(null);
     setBusy(true);
+
+    const esMovil =
+      typeof window !== "undefined" &&
+      (window.matchMedia("(pointer: coarse)").matches || window.innerWidth < 820);
+
+    if (esMovil) {
+      /* `location` y no el enrutador de Next: esto NO es una pagina nuestra,
+         es una ruta que responde 302 hacia Facebook. El enrutador hace
+         navegacion del lado del cliente y no sigue un redirect a otro sitio. */
+      // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- sale a Facebook
+      window.location.href = "/api/meta/start";
+      return;
+    }
 
     const w = window.open(
       "/api/meta/start",
@@ -93,8 +112,9 @@ export default function PedirAcceso({
     );
 
     if (!w) {
-      setBusy(false);
-      setError("Tu navegador bloqueó la ventana. Permite las ventanas emergentes y reintenta.");
+      // Sin ventana nueva, se va en la misma. Mejor eso que un callejón.
+      // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- sale a Facebook
+      window.location.href = "/api/meta/start";
       return;
     }
 

@@ -27,7 +27,13 @@ export async function GET(req: Request) {
     .select("id")
     .eq("status", "scheduled")
     .lte("scheduled_at", new Date().toISOString())
-    .limit(20);
+    /* Pocos por vuelta, y a proposito.
+
+       Cada post puede gastar decenas de llamadas externas, y Cloudflare
+       corta a las 50 por ejecucion. Atender veinte de un golpe garantiza
+       pasarse del tope y que fallen todos. Con tres, y una vuelta cada
+       cinco minutos, salen igual sin reventar. */
+    .limit(3);
 
   const ids = (due ?? []).map((p) => p.id);
   const done: { id: string; ok: number; total: number }[] = [];

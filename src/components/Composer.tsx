@@ -71,6 +71,8 @@ export default function Composer({ cuentas }: { cuentas: CuentaFila[] }) {
         results?: Resultado[];
         ok?: number;
         total?: number;
+        /** Destinos que no cupieron en esta tanda y salen solos en minutos. */
+        quedan?: number;
       };
       if (!r.ok) throw new Error(j.error ?? "Falló la publicación");
 
@@ -78,7 +80,15 @@ export default function Composer({ cuentas }: { cuentas: CuentaFila[] }) {
         setAviso(`Programado para el ${new Date(cuando).toLocaleString("es")}.`);
       } else {
         setResultados(j.results ?? []);
-        if (j.ok === j.total) {
+
+        if (j.quedan && j.quedan > 0) {
+          setAviso(
+            `Van ${j.ok} de las primeras ${j.total}. Faltan ${j.quedan} cuentas y salen solas ` +
+              `en unos minutos — no cierres nada, esto sigue por su cuenta.`,
+          );
+        }
+
+        if (j.ok === j.total && !j.quedan) {
           setMessage("");
           setLink("");
           setComentario("");

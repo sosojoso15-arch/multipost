@@ -74,7 +74,8 @@ export default async function AdminPage() {
             </li>
             <li>
               Le pusiste el correo o el nombre. Esa caja solo acepta el{" "}
-              <b>nombre de usuario</b> o el ID numérico.
+              <b>nombre de usuario</b> o el <b>ID numérico</b> — las cuentas sin nombre de
+              usuario solo tienen número, y ese sirve igual.
             </li>
           </ol>
           <p className="mt-1.5" style={{ color: "var(--muted)" }}>
@@ -87,7 +88,12 @@ export default async function AdminPage() {
           <a href={ENLACE_INVITACION} target="_blank" rel="noreferrer" className="underline">
             facebook.com/settings → Desarrollador
           </a>
-          . Esa invitación no llega por correo, por eso hay que pasarles el enlace.
+          — o en{" "}
+          <a href="https://developers.facebook.com/requests/" target="_blank" rel="noreferrer" className="underline">
+            developers.facebook.com/requests
+          </a>
+          , que es el que conviene pasarles: los enlaces a facebook.com se los abre la app del
+          teléfono, donde no se puede aceptar.
         </p>
       </div>
 

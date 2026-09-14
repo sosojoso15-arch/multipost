@@ -2,6 +2,7 @@
 
 import { useCallback, useState } from "react";
 import type { Solicitud } from "@/lib/testers";
+import { limpiarRefFacebook } from "@/lib/facebookRef";
 
 function Copiar({ texto, children }: { texto: string; children: React.ReactNode }) {
   const [ok, setOk] = useState(false);
@@ -215,9 +216,18 @@ npx wrangler secret put CORREO_REMITENTE`}
                       )}
                     </p>
                   </div>
+                  {/* Meta acepta varias formas y no siempre las mismas: se
+                      ofrecen las dos —lo que escribió el cliente y el ID
+                      pelado— para poder probar la otra si una no resuelve. */}
                   <div className="flex shrink-0 flex-col gap-1.5">
+                    <Copiar texto={s.facebook_ref}>Copiar perfil</Copiar>
+                    {(() => {
+                      const corto = limpiarRefFacebook(s.facebook_ref);
+                      return corto && corto !== s.facebook_ref ? (
+                        <Copiar texto={corto}>Copiar solo el ID</Copiar>
+                      ) : null;
+                    })()}
                     {s.nombre_fb && <Copiar texto={s.nombre_fb}>Copiar nombre</Copiar>}
-                    <Copiar texto={s.facebook_ref}>Copiar usuario</Copiar>
                   </div>
                 </div>
 

@@ -5,16 +5,18 @@ import { useRouter } from "next/navigation";
 
 type Estado = "ninguna" | "pendiente" | "listo" | "rechazado";
 
-const ENLACE = "https://www.facebook.com/settings?tab=developer";
+/* Las invitaciones a roles de app se aceptan AQUI.
+
+   Ojo con esto: cualquier enlace a facebook.com lo secuestra la app de
+   Facebook en el telefono, y la app no tiene esa pantalla — el cliente
+   termina viendo su muro sin entender nada. developers.facebook.com NO lo
+   intercepta, asi que abre en el navegador y si se puede aceptar. */
+const ENLACE = "https://developers.facebook.com/requests/";
 
 /* Donde el cliente se hace desarrollador. Meta lo EXIGE para poder meter a
    alguien en un rol de la app: sin esto, al invitarlo sale
    "does not resolve to a valid user ID" y no hay forma de seguir. */
 const ENLACE_DEV = "https://developers.facebook.com/";
-
-/* Donde ve su nombre de usuario. Es el que va al final de la direccion de
-   su perfil, y mucha gente no sabe que existe. */
-const ENLACE_USUARIO = "https://www.facebook.com/settings?tab=account&section=username";
 
 /**
  * El camino corto: en vez de crear su propia app de Meta, el cliente nos
@@ -86,7 +88,7 @@ export default function PedirAcceso({
               className="font-semibold underline"
               style={{ color: "var(--brand)" }}
             >
-              la configuración de desarrollador de Facebook
+              tus solicitudes de desarrollador
             </a>
           </li>
           <li>
@@ -107,6 +109,9 @@ export default function PedirAcceso({
         <p className="mt-3 text-xs" style={{ color: "var(--muted)" }}>
           Esa invitación <b>no llega por correo</b>: vive escondida en la configuración de Facebook.
           Por eso te dejamos el enlace directo.
+          <br />
+          <b>Si estás en el celular</b> y se te abre la app de Facebook en vez de la página,
+          ábrelo en el navegador: en la app no se puede aceptar.
         </p>
       </div>
     );
@@ -136,7 +141,7 @@ export default function PedirAcceso({
           <div className="mt-3 space-y-3">
             <div>
               <label className="label" htmlFor="fbref2">
-                Nombre de usuario de Facebook
+                La dirección de tu perfil de Facebook
               </label>
               <input
                 id="fbref2"
@@ -270,12 +275,12 @@ export default function PedirAcceso({
 
       <div className="mt-4">
         <label className="label" htmlFor="fbref">
-          Tu nombre de usuario de Facebook
+          La dirección de tu perfil de Facebook
         </label>
         <input
           id="fbref"
           className="input font-mono"
-          placeholder="juan.suarez.123"
+          placeholder="facebook.com/tu.perfil"
           value={valor}
           onChange={(e) => setValor(e.target.value)}
           onKeyDown={(e) => {
@@ -286,18 +291,14 @@ export default function PedirAcceso({
           }}
         />
         <p className="mt-1.5 text-xs" style={{ color: "var(--muted)" }}>
-          Es lo que va al final de la dirección de tu perfil:{" "}
-          <span className="font-mono">facebook.com/<b>juan.suarez.123</b></span>. No sirve el
-          correo — Facebook no lo acepta ahí.{" "}
-          <a
-            href={ENLACE_USUARIO}
-            target="_blank"
-            rel="noreferrer"
-            className="underline"
-            style={{ color: "var(--brand)" }}
-          >
-            Ver el mío
-          </a>
+          Abre tu perfil de Facebook y pega la dirección completa. Nosotros sacamos lo que hace
+          falta.
+          <br />
+          Sirve <span className="font-mono">facebook.com/tu.perfil</span> y también{" "}
+          <span className="font-mono">facebook.com/profile.php?id=615…</span>, que es como se ven
+          las cuentas sin nombre de usuario.
+          <br />
+          <b>No sirve el correo</b>: Facebook no lo acepta para esto.
         </p>
       </div>
 

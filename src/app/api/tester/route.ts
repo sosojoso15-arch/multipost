@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
 import { haPagado } from "@/lib/plans";
+import { limpiarRefFacebook } from "@/lib/facebookRef";
 
 /**
  * El cliente pide acceso: nos deja su usuario de Facebook y espera a que
@@ -50,32 +51,23 @@ export async function POST(req: Request) {
     );
   }
 
-  // Meta NO resuelve correos ni nombres con espacios en la caja de roles:
-  // devuelve "does not resolve to a valid user ID". Solo sirve el nombre de
-  // usuario o el ID numerico. Mejor cortarlo aqui que hacerle perder el
-  // viaje al dueno cuando vaya a invitarlo.
-  if (ref.includes("@")) {
+  // La gente pega la direccion entera del perfil, o el "profile.php?id=..."
+  // de las cuentas que no tienen nombre de usuario. Las dos sirven.
+  // Se comprueba que se PUEDA sacar algo util, pero se guarda lo que el
+  // cliente escribio: Meta acepta mas formas de las que uno cree, y elegir
+  // por el es arriesgarse a que la invitacion no resuelva.
+  if (!limpiarRefFacebook(ref)) {
     return NextResponse.json(
       {
         error:
-          "Eso es un correo, y Facebook no lo acepta ahí. Necesitamos tu nombre de usuario: " +
-          "el que sale al final de la dirección de tu perfil, facebook.com/TU.USUARIO",
+          ref.includes("@")
+            ? "Eso es un correo, y Facebook no lo acepta. Necesitamos tu nombre de usuario " +
+              "o el número de tu perfil."
+            : "No pudimos leer eso. Pega la dirección de tu perfil de Facebook, " +
+              "o el número que sale después de id=",
       },
       { status: 400 },
     );
-  }
-  if (/\s/.test(ref)) {
-    return NextResponse.json(
-      {
-        error:
-          "El nombre de usuario va sin espacios. Míralo al final de la dirección de tu perfil, " +
-          "facebook.com/TU.USUARIO",
-      },
-      { status: 400 },
-    );
-  }
-  if (ref.length > 160) {
-    return NextResponse.json({ error: "Eso es demasiado largo." }, { status: 400 });
   }
 
   // Obligatorio: sin el nombre, el buscador de Meta devuelve varias cuentas

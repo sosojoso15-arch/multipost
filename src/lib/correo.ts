@@ -114,9 +114,15 @@ export function enlaceRoles(): string {
     : "https://developers.facebook.com/apps/";
 }
 
-/** Donde acepta el cliente la invitación de Tester. No es un correo: está
- *  escondido en la configuración de Facebook y nadie lo encuentra solo. */
-export const ENLACE_INVITACION = "https://www.facebook.com/settings?tab=developer";
+/**
+ * Donde acepta el cliente la invitacion. No llega por correo: vive escondida
+ * y nadie la encuentra solo.
+ *
+ * Va a developers.facebook.com y NO a facebook.com/settings a proposito: en
+ * el telefono, cualquier enlace a facebook.com lo secuestra la app, que no
+ * tiene esa pantalla. El cliente termina en su muro sin entender nada.
+ */
+export const ENLACE_INVITACION = "https://developers.facebook.com/requests/";
 
 /** El aviso de "ya te invité, ve y acepta". */
 export function mensajeInvitado(appUrl: string): Correo["cuerpo"] {

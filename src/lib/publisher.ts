@@ -22,6 +22,15 @@ type Media = {
  */
 const POR_TANDA = 12;
 
+/**
+ * Cuantas veces se reintenta un destino que fallo.
+ *
+ * Los fallos de Meta a veces son pasajeros —se cayo un momento, tardo de
+ * mas— y reintentar los salva. Pero un token muerto falla SIEMPRE: sin este
+ * tope volveria a la cola cada cinco minutos, para siempre.
+ */
+const MAX_INTENTOS = 3;
+
 type Fila = {
   id: string;
   post_id: string;
@@ -66,19 +75,33 @@ export async function runPost(sb: SupabaseClient, postId: string) {
   const imageUrl = media.find((m) => m.type === "image")?.url ?? null;
   const videoUrl = media.find((m) => m.type === "video")?.url ?? null;
 
+  /* Se marca ANTES de leer los destinos, y sirve de tranca: el cron solo
+     recoge los `scheduled`, asi que mientras este en `publishing` no lo
+     agarra otra vez. Sin esto, una tanda lenta —un video, que espera hasta
+     dos minutos— podia solaparse con la siguiente vuelta del cron y publicar
+     el mismo post DOS VECES en la pagina del cliente.
+
+     La fecha se pone tambien aqui para poder rescatarlo si el Worker se
+     muere a medias: quedaria en `publishing` para siempre. */
+  await sb
+    .from("posts")
+    .update({ status: "publishing", scheduled_at: new Date().toISOString() })
+    .eq("id", postId);
+
+  /* `pending`, y los `error` que todavia tengan reintentos.
+     Si se pidieran todos los `error`, una pagina con el token muerto volveria
+     a la cola, fallaria, volveria… cada cinco minutos para siempre. */
   const { data: targets } = await sb
     .from("post_targets")
     .select(
       "id, post_id, account_id, attempts, accounts(id, user_id, platform, external_id, name, token_enc, meta_apps(graph_ver))",
     )
     .eq("post_id", postId)
-    .in("status", ["pending", "error"]);
+    .or(`status.eq.pending,and(status.eq.error,attempts.lt.${MAX_INTENTOS})`);
 
   const pendientes = (targets ?? []) as unknown as Fila[];
   const tanda = pendientes.slice(0, POR_TANDA);
   const quedan = pendientes.length - tanda.length;
-
-  await sb.from("posts").update({ status: "publishing" }).eq("id", postId);
 
   /* Los resultados se juntan y se guardan de UNA. Antes era un `update` por
      destino, y esas tambien cuentan contra el tope de llamadas: con treinta

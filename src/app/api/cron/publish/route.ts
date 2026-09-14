@@ -22,11 +22,14 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 
-  const { data: due } = await sb
+  const ahora = new Date();
+
+  /* Los que les llego la hora. */
+  const { data: aLaHora } = await sb
     .from("posts")
     .select("id")
     .eq("status", "scheduled")
-    .lte("scheduled_at", new Date().toISOString())
+    .lte("scheduled_at", ahora.toISOString())
     /* Pocos por vuelta, y a proposito.
 
        Cada post puede gastar decenas de llamadas externas, y Cloudflare
@@ -35,7 +38,25 @@ export async function GET(req: Request) {
        cinco minutos, salen igual sin reventar. */
     .limit(3);
 
-  const ids = (due ?? []).map((p) => p.id);
+  /* Y los que se quedaron trancados.
+
+     `publishing` sirve de tranca para que dos vueltas no publiquen lo mismo,
+     pero si el Worker se muere a media tanda el post se queda ahi para
+     siempre. Diez minutos es de sobra para cualquier tanda —lo mas lento es
+     un video, que espera dos— asi que pasado eso se da por muerto y se
+     retoma. Los destinos ya publicados quedaron en `ok`, no se repiten. */
+  const trancado = new Date(ahora.getTime() - 10 * 60 * 1000).toISOString();
+
+  const { data: colgados } = await sb
+    .from("posts")
+    .select("id")
+    .eq("status", "publishing")
+    .lte("scheduled_at", trancado)
+    .limit(2);
+
+  const due = [...(aLaHora ?? []), ...(colgados ?? [])];
+
+  const ids = due.map((p) => p.id);
   const done: { id: string; ok: number; total: number }[] = [];
 
   for (const id of ids) {

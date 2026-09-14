@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { decrypt } from "@/lib/crypto";
 import { publish, comentar, MetaError } from "@/lib/meta";
+import { secreto } from "@/lib/env";
 
 type Media = {
   url: string;
@@ -12,15 +13,24 @@ type Media = {
 /**
  * Cuantos destinos se atienden por ejecucion.
  *
- * Cloudflare corta a las 50 llamadas externas por invocacion en el plan
- * gratis, y cada destino son dos o tres: publicar, comentar, y guardar el
- * resultado. Con treinta paginas se pasa del tope y revientan TODAS, que es
- * lo peor que puede pasar: el cliente no publica en ninguna.
+ * Cloudflare corta las llamadas externas por invocacion: 50 en el plan
+ * gratis, 1.000 en el pagado. Cada destino gasta dos o tres —publicar,
+ * comentar, guardar— asi que pasarse hace que revienten TODAS a la vez, que
+ * es lo peor: el cliente no publica en ninguna.
  *
- * Mejor atender una tanda y dejar el resto en la cola: el cron las recoge en
- * menos de cinco minutos y salen igual.
+ * Lo que no cabe se queda en la cola y el cron lo recoge en menos de cinco
+ * minutos.
+ *
+ * Se puede subir sin desplegar, con el secreto TANDA_DESTINOS. En el plan
+ * pagado cabrian unos 250, pero OJO: el otro tope es de Meta. Publicar en
+ * trescientas paginas en dos segundos desde la misma app es justo lo que sus
+ * sistemas leen como abuso. Subirlo mucho cambia un problema por otro peor,
+ * porque el de Meta no avisa: simplemente empieza a rechazar.
  */
-const POR_TANDA = 12;
+function porTanda(): number {
+  const n = Number(secreto("TANDA_DESTINOS"));
+  return Number.isFinite(n) && n >= 1 && n <= 400 ? Math.floor(n) : 12;
+}
 
 /**
  * Cuantas veces se reintenta un destino que fallo.
@@ -100,7 +110,7 @@ export async function runPost(sb: SupabaseClient, postId: string) {
     .or(`status.eq.pending,and(status.eq.error,attempts.lt.${MAX_INTENTOS})`);
 
   const pendientes = (targets ?? []) as unknown as Fila[];
-  const tanda = pendientes.slice(0, POR_TANDA);
+  const tanda = pendientes.slice(0, porTanda());
   const quedan = pendientes.length - tanda.length;
 
   /* Los resultados se juntan y se guardan de UNA. Antes era un `update` por

@@ -11,7 +11,12 @@ type Estado = "ninguna" | "pendiente" | "listo" | "rechazado";
    Facebook en el telefono, y la app no tiene esa pantalla — el cliente
    termina viendo su muro sin entender nada. developers.facebook.com NO lo
    intercepta, asi que abre en el navegador y si se puede aceptar. */
-const ENLACE = "https://developers.facebook.com/requests/";
+const ENLACE = "https://developers.facebook.com/settings/developer/requests/";
+
+/* Respaldo: la misma pantalla dentro de Facebook. Sirve en el computador,
+   pero en el telefono la secuestra la app de Facebook y ahi no se puede
+   aceptar. Por eso va de segunda y no de primera. */
+const ENLACE_RESPALDO = "https://www.facebook.com/settings?tab=developer";
 
 /* Donde el cliente se hace desarrollador. Meta lo EXIGE para poder meter a
    alguien en un rol de la app: sin esto, al invitarlo sale
@@ -112,6 +117,12 @@ export default function PedirAcceso({
           <br />
           <b>Si estás en el celular</b> y se te abre la app de Facebook en vez de la página,
           ábrelo en el navegador: en la app no se puede aceptar.
+          <br />
+          ¿No aparece nada?{" "}
+          <a href={ENLACE_RESPALDO} target="_blank" rel="noreferrer" className="underline">
+            Prueba por aquí
+          </a>
+          .
         </p>
       </div>
     );

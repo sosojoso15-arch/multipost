@@ -89,8 +89,8 @@ export default async function AdminPage() {
             facebook.com/settings → Desarrollador
           </a>
           — o en{" "}
-          <a href="https://developers.facebook.com/requests/" target="_blank" rel="noreferrer" className="underline">
-            developers.facebook.com/requests
+          <a href="https://developers.facebook.com/settings/developer/requests/" target="_blank" rel="noreferrer" className="underline">
+            developers.facebook.com/settings/developer/requests
           </a>
           , que es el que conviene pasarles: los enlaces a facebook.com se los abre la app del
           teléfono, donde no se puede aceptar.

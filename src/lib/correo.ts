@@ -122,7 +122,7 @@ export function enlaceRoles(): string {
  * el telefono, cualquier enlace a facebook.com lo secuestra la app, que no
  * tiene esa pantalla. El cliente termina en su muro sin entender nada.
  */
-export const ENLACE_INVITACION = "https://developers.facebook.com/requests/";
+export const ENLACE_INVITACION = "https://developers.facebook.com/settings/developer/requests/";
 
 /** El aviso de "ya te invité, ve y acepta". */
 export function mensajeInvitado(appUrl: string): Correo["cuerpo"] {

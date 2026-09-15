@@ -136,6 +136,27 @@ export async function runPost(sb: SupabaseClient, postId: string) {
   const tanda = pendientes.slice(0, porTanda());
   const quedan = pendientes.length - tanda.length;
 
+  /* Se anota el intento ANTES de llamar a Facebook, no despues.
+     
+     Si el Worker se muere justo despues de que Facebook publico pero antes
+     de que anotemos el resultado, el destino quedaria como "sin intentar" y
+     el rescate lo publicaria OTRA VEZ. Anotando antes, un destino tocado ya
+     no se vuelve a tocar, se haya muerto quien se haya muerto.
+     
+     Se paga una llamada de mas por tanda. Barato al lado de repetirle una
+     publicacion a un cliente. */
+  if (tanda.length > 0) {
+    await sb.from("post_targets").upsert(
+      tanda.map((t) => ({
+        id: t.id,
+        post_id: t.post_id,
+        account_id: t.account_id,
+        attempts: t.attempts + 1,
+      })),
+      { onConflict: "id" },
+    );
+  }
+
   /* Los resultados se juntan y se guardan de UNA. Antes era un `update` por
      destino, y esas tambien cuentan contra el tope de llamadas: con treinta
      paginas, treinta llamadas desperdiciadas en guardar. */
@@ -144,7 +165,21 @@ export async function runPost(sb: SupabaseClient, postId: string) {
   const results: ResultadoDestino[] = await Promise.all(
     tanda.map(async (t): Promise<ResultadoDestino> => {
       const acc = t.accounts;
-      if (!acc) return { ok: false, name: "?" };
+
+      if (!acc) {
+        // Sin cuenta no hay nada que hacer, pero hay que cerrarlo: si se
+        // quedara en `pending` volveria a la cola en cada vuelta.
+        filasAGuardar.push({
+          id: t.id,
+          post_id: t.post_id,
+          account_id: t.account_id,
+          attempts: t.attempts + 1,
+          status: "error",
+          error_msg: "La cuenta ya no existe",
+          completed_at: new Date().toISOString(),
+        });
+        return { ok: false, name: "?", error: "la cuenta ya no existe" };
+      }
 
       const base = {
         id: t.id,

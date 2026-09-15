@@ -41,13 +41,28 @@ function porTanda(): number {
 }
 
 /**
- * Cuantas veces se reintenta un destino que fallo.
+ * NO se reintenta publicar. Nunca, automaticamente.
  *
- * Los fallos de Meta a veces son pasajeros —se cayo un momento, tardo de
- * mas— y reintentar los salva. Pero un token muerto falla SIEMPRE: sin este
- * tope volveria a la cola cada cinco minutos, para siempre.
+ * Esto costo caro: a un cliente se le publico el mismo video unas DOSCIENTAS
+ * veces en la misma pagina, y Facebook lo enterro por repetido —cero vistas.
+ *
+ * El motivo es que publicar NO es una operacion que se pueda repetir sin
+ * consecuencias. Pasa esto:
+ *
+ *   1. Le mandamos el post a Facebook
+ *   2. Facebook LO PUBLICA
+ *   3. La respuesta se demora, se corta, o da error
+ *   4. Nosotros lo anotamos como "error"
+ *   5. Reintentamos -> publica OTRA VEZ
+ *
+ * Desde aqui no hay forma de distinguir "no se publico" de "se publico pero
+ * no me enteré". Y si se elige mal, se elige a favor de ensuciarle la pagina
+ * al cliente y de que Facebook lo castigue por spam.
+ *
+ * Asi que un intento y ya. Si fallo, se muestra el error y el cliente decide
+ * —mirando su pagina, que es el unico sitio donde esta la verdad.
  */
-const MAX_INTENTOS = 3;
+const MAX_INTENTOS = 1;
 
 type Fila = {
   id: string;

@@ -14,22 +14,30 @@ type Media = {
  * Cuantos destinos se atienden por ejecucion.
  *
  * Cloudflare corta las llamadas externas por invocacion: 50 en el plan
- * gratis, 1.000 en el pagado. Cada destino gasta dos o tres —publicar,
- * comentar, guardar— asi que pasarse hace que revienten TODAS a la vez, que
- * es lo peor: el cliente no publica en ninguna.
+ * gratis y 10.000 en el pagado —ampliable hasta 10 millones—. Cada destino
+ * gasta dos o tres: publicar, comentar, guardar. Pasarse hace que revienten
+ * TODAS a la vez, que es lo peor: el cliente no publica en ninguna.
  *
  * Lo que no cabe se queda en la cola y el cron lo recoge en menos de cinco
  * minutos.
  *
- * Se puede subir sin desplegar, con el secreto TANDA_DESTINOS. En el plan
- * pagado cabrian unos 250, pero OJO: el otro tope es de Meta. Publicar en
- * trescientas paginas en dos segundos desde la misma app es justo lo que sus
- * sistemas leen como abuso. Subirlo mucho cambia un problema por otro peor,
- * porque el de Meta no avisa: simplemente empieza a rechazar.
+ * Se ajusta sin desplegar, con el secreto TANDA_DESTINOS.
+ *
+ * En el plan pagado el tope de Cloudflare deja de ser el problema: con
+ * 10.000 caben tres mil paginas. El que manda es el de META, que no avisa
+ * —simplemente empieza a rechazar, o bloquea la app un rato—. Por eso el
+ * valor por defecto es prudente: subirlo es decision de quien mira los
+ * resultados de verdad.
+ *
+ * Y un detalle de Cloudflare que cambia los tiempos: solo seis llamadas
+ * pueden estar esperando respuesta a la vez. Las 150 no salen en paralelo de
+ * verdad, van entrando por tandas de seis. Tarda mas de lo que uno cree,
+ * pero no falla.
  */
 function porTanda(): number {
   const n = Number(secreto("TANDA_DESTINOS"));
-  return Number.isFinite(n) && n >= 1 && n <= 400 ? Math.floor(n) : 12;
+  // Tope alto pero tope: un dedazo de 99999 no deberia tumbar nada.
+  return Number.isFinite(n) && n >= 1 && n <= 3000 ? Math.floor(n) : 12;
 }
 
 /**

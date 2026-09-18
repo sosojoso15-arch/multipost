@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { pedirPermisoFacebook, precargarSdk } from "@/lib/sdkFacebook";
+import AyudaWhatsApp from "@/components/AyudaWhatsApp";
 import { useRouter } from "next/navigation";
 
 type Estado = "ninguna" | "pendiente" | "listo" | "rechazado";
@@ -287,6 +288,11 @@ export default function PedirAcceso({
           </a>
           .
         </p>
+
+        <AyudaWhatsApp
+          className="mt-3 border-t pt-3"
+          paso="aceptar la invitación de Facebook y conectar mis páginas"
+        />
       </div>
     );
   }
@@ -374,6 +380,8 @@ export default function PedirAcceso({
             {error}
           </p>
         )}
+
+        <AyudaWhatsApp className="mt-3 border-t pt-3" paso="esperando que me den acceso" />
       </div>
     );
   }
@@ -386,6 +394,8 @@ export default function PedirAcceso({
         <p className="mt-1.5 text-sm" style={{ color: "var(--muted)" }}>
           {nota ?? "Puedes seguir por el camino largo: crear tu propia app de Meta, aquí abajo."}
         </p>
+
+        <AyudaWhatsApp className="mt-3" paso="me rechazaron la solicitud de acceso" />
       </div>
     );
   }
@@ -539,6 +549,11 @@ export default function PedirAcceso({
           {error}
         </p>
       )}
+
+      <AyudaWhatsApp
+        className="mt-4 border-t pt-4"
+        paso="pedir acceso — registrarme como desarrollador de Facebook"
+      />
     </div>
   );
 }

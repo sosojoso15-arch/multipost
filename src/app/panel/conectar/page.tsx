@@ -2,6 +2,7 @@ import { supabaseServer, currentUser } from "@/lib/supabase/server";
 import ConnectWizard from "@/components/ConnectWizard";
 import { redirectUri } from "@/lib/metaOauth";
 import PedirAcceso from "@/components/PedirAcceso";
+import AyudaWhatsApp from "@/components/AyudaWhatsApp";
 import Plan from "@/components/Plan";
 import { haPagado, limitePosts, planVigente } from "@/lib/plans";
 import { precioUsd } from "@/lib/precio";
@@ -81,6 +82,8 @@ export default async function ConectarPage({
             </Link>
             .
           </p>
+
+          <AyudaWhatsApp className="mt-3 border-t pt-3" paso="pagar el plan" />
         </div>
       </main>
     );

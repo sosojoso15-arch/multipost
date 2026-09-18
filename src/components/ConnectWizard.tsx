@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import AyudaWhatsApp from "@/components/AyudaWhatsApp";
 
 type Guardada = {
   app_id: string;
@@ -301,6 +302,7 @@ export default function ConnectWizard({
         <button className="btn btn-primary" onClick={() => setAbierto(2)}>
           Ya la creé
         </button>
+        <AyudaWhatsApp paso="paso 1 — crear mi app en Meta" />
       </Paso>
 
       {/* ---------------- 2 ---------------- */}
@@ -367,6 +369,7 @@ export default function ConnectWizard({
           {busy ? "Guardando..." : "Guardar y seguir"}
         </button>
         <Aviso error={error} guardado={guardado} />
+        <AyudaWhatsApp paso="paso 2 — copiar mi App ID y App Secret" />
       </Paso>
 
       {/* ---------------- 3 ---------------- */}
@@ -487,6 +490,7 @@ export default function ConnectWizard({
           {busy ? "Guardando..." : "Guardar y seguir"}
         </button>
         <Aviso error={error} guardado={guardado} />
+        <AyudaWhatsApp paso="paso 3 — agregar el inicio de sesión y crear la configuración" />
       </Paso>
 
       {/* ---------------- 4 ---------------- */}
@@ -527,6 +531,7 @@ export default function ConnectWizard({
           <br />
           ¿No ves ese producto en el menú de la izquierda? Te faltó el paso 3.
         </p>
+        <AyudaWhatsApp paso="paso 4 — pegar la URL de redirección en mi app" />
       </Paso>
 
       {/* ---------------- 5 ---------------- */}
@@ -557,6 +562,7 @@ export default function ConnectWizard({
           </p>
         )}
         <Aviso error={error} guardado={false} />
+        <AyudaWhatsApp paso="paso 5 — conectar con Facebook y traer mis páginas" />
       </Paso>
 
       {/* ---------------- ayuda cuando falla ---------------- */}

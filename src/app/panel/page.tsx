@@ -2,7 +2,7 @@ import Link from "next/link";
 import { supabaseServer, currentUser } from "@/lib/supabase/server";
 import Composer from "@/components/Composer";
 import Plan from "@/components/Plan";
-import { haPagado, limitePosts, planVigente } from "@/lib/plans";
+import { haPagado, limitePosts, planVigente, modoGratis } from "@/lib/plans";
 import { precioUsd } from "@/lib/precio";
 
 export default async function PanelPage() {
@@ -98,6 +98,7 @@ export default async function PanelPage() {
           hasta={profile?.plan_expires_at ?? null}
           precioUsd={precioUsd()}
           vencido={vencido}
+          gratis={modoGratis() && (profile?.plan ?? "free") === "free"}
         />
       </div>
 

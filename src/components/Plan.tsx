@@ -12,6 +12,8 @@ type Props = {
    *  del cobro real, y entonces el botón promete un precio y Wompi cobra otro. */
   precioUsd: number;
   vencido: boolean;
+  /** Abierto gratis mientras probamos. Entonces no se cobra ni se ofrece pagar. */
+  gratis?: boolean;
 };
 
 /** Cuantos dias faltan, redondeando hacia arriba: si quedan 4 horas, queda
@@ -24,7 +26,7 @@ function diasHasta(iso: string | null): number | null {
   return Math.max(0, Math.ceil(ms / 86400000));
 }
 
-export default function Plan({ plan, usados, limite, hasta, vencido, precioUsd }: Props) {
+export default function Plan({ plan, usados, limite, hasta, vencido, precioUsd, gratis }: Props) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [precio, setPrecio] = useState<{ pesos?: string; trm?: number } | null>(null);
@@ -78,7 +80,12 @@ export default function Plan({ plan, usados, limite, hasta, vencido, precioUsd }
   let detalle: string;
   let urge = false;
 
-  if (vencido) {
+  if (gratis) {
+    /* Abierto gratis. Decir "Plan pro · Activo" seria mentira, y ofrecerle
+       pagar cuando no hace falta hace que la gente no pruebe. */
+    titulo = "Gratis mientras probamos";
+    detalle = "Publica en todas tus páginas sin pagar. Te avisamos antes de cobrar.";
+  } else if (vencido) {
     titulo = "Se te venció el plan";
     detalle = "Renuévalo para seguir publicando en todas tus páginas.";
     urge = true;
@@ -109,14 +116,14 @@ export default function Plan({ plan, usados, limite, hasta, vencido, precioUsd }
           <p className="mt-0.5 text-sm" style={{ color: "var(--muted)" }}>
             {detalle}
           </p>
-          {plan !== "free" && (
+          {(gratis || plan !== "free") && (
             <p className="mt-2 text-xs" style={{ color: "var(--muted)" }}>
               {usados} de {limite === 100000 ? "las que quieras" : limite} publicaciones este mes
             </p>
           )}
         </div>
 
-        {(vencido || plan === "free") && (
+        {!gratis && (vencido || plan === "free") && (
           <div className="flex shrink-0 flex-col items-stretch gap-1 sm:items-end">
             <button className="btn btn-primary" onClick={pagar} disabled={busy}>
               {busy

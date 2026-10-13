@@ -25,7 +25,19 @@ export async function POST() {
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 
-  const { amountInCents, trm, fuente, pesos } = await precioEnCentavos();
+  /* Si no hay de donde sacar el dolar, NO se cobra. Antes habia un numero
+     de respaldo escrito a mano y eso es peor: cobra callado un precio que
+     no es el de hoy. Mejor pedirle que reintente en un minuto. */
+  let cobro;
+  try {
+    cobro = await precioEnCentavos();
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "No se pudo calcular el precio";
+    console.error(`pago/checkout: ${msg}`);
+    return NextResponse.json({ error: msg }, { status: 503 });
+  }
+
+  const { amountInCents, trm, fuente, pesos } = cobro;
   const referencia = nuevaReferencia(user.id);
 
   // Se apunta ANTES de mandar a nadie a pagar. Si el aviso de Wompi llega y no

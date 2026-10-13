@@ -11,13 +11,13 @@ import { secreto } from "@/lib/env";
  */
 
 /** Lo que cuesta un mes, si nadie dice otra cosa. */
-const PRECIO_POR_DEFECTO = 45;
+const PRECIO_POR_DEFECTO = 55;
 
 /**
  * El precio de hoy, en dolares.
  *
  * Se puede cambiar SIN volver a desplegar, con el secreto PRECIO_USD del
- * Worker. Sirve para probar el cobro de verdad con 1 USD y volver a 45
+ * Worker. Sirve para probar el cobro de verdad con 1 USD y volver a 55
  * despues, en dos comandos y sin tocar codigo.
  *
  * Un valor invalido se ignora y se usa el de siempre: es mejor cobrar de
